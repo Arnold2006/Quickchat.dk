@@ -644,6 +644,7 @@ const Admin = (() => {
         body:    JSON.stringify({ password: pw }),
       });
       const data = await res.json();
+      if (res.status === 429) { errEl.textContent = 'For mange forsøg — prøv igen om 15 minutter.'; return; }
       if (!res.ok) { errEl.textContent = 'Forkert adgangskode. Prøv igen.'; return; }
       token = data.token;
       sessionStorage.setItem('adminToken', token);
@@ -777,13 +778,22 @@ const Admin = (() => {
     btn.textContent = 'Gemmer…';
 
     const payload = { name, icon, description: desc };
-    if (iconImage !== undefined) payload.iconImage = iconImage; // null = clear, string = new image
+    if (iconImage !== undefined) payload.iconImage = iconImage;
+
+    console.log('saveRoom', roomId, {
+      hasIconImage: iconImage !== undefined,
+      iconImageType: iconImage ? iconImage.substring(0, 30) : null,
+      iconImageLength: iconImage ? iconImage.length : 0,
+      payloadKeys: Object.keys(payload),
+    });
 
     const result = await api('PUT', `/admin/rooms/${roomId}`, payload);
     if (result?.ok) {
       delete pendingIconImages[roomId];
-      showIndicator(roomId, '✓ Gemt!', false);
+      const hadImage = payload.iconImage && payload.iconImage.startsWith('data:');
+      showIndicator(roomId, hadImage ? '✓ Gemt med billede!' : '✓ Gemt!', false);
       btn.textContent = 'Gem ændringer';
+      loadRooms(); // refresh all cards so preview reflects server state
     } else {
       showIndicator(roomId, result?.error || 'Fejl ved gemning', true);
       btn.disabled    = false;
@@ -797,41 +807,64 @@ const Admin = (() => {
     if (!file) return;
     if (!file.type.startsWith('image/')) return showIndicator(roomId, 'Kun billedfiler', true);
 
+    showIndicator(roomId, '⏳ Behandler billede…', false);
+
     const reader = new FileReader();
+    reader.onerror = () => showIndicator(roomId, 'Kunne ikke læse filen', true);
     reader.onload = e => {
       const img = new Image();
+      img.onerror = () => showIndicator(roomId, 'Ugyldigt billedformat', true);
       img.onload = () => {
-        // Resize to 64x64 using canvas
-        const canvas    = document.createElement('canvas');
-        canvas.width    = 64;
-        canvas.height   = 64;
-        const ctx       = canvas.getContext('2d');
-        // Cover crop
-        const scale     = Math.max(64 / img.width, 64 / img.height);
-        const sw        = 64 / scale;
-        const sh        = 64 / scale;
-        const sx        = (img.width  - sw) / 2;
-        const sy        = (img.height - sh) / 2;
-        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, 64, 64);
-        const dataUrl   = canvas.toDataURL('image/jpeg', 0.85);
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width  = 64;
+          canvas.height = 64;
+          const ctx = canvas.getContext('2d');
 
-        // Show preview, hide emoji input
-        const preview   = document.getElementById('iconimg-' + roomId);
-        const emojiInp  = document.getElementById('icon-' + roomId);
-        const clearBtn  = document.getElementById('iconclear-' + roomId);
-        preview.src     = dataUrl;
-        preview.style.display  = 'block';
-        emojiInp.style.display = 'none';
-        clearBtn.style.display = 'block';
+          // White background (needed for JPEG — transparent PNG would go black)
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, 64, 64);
 
-        // Stage the change
-        pendingIconImages[roomId] = dataUrl;
-        markDirty(roomId);
+          // Cover-crop to 64×64
+          const scale = Math.max(64 / img.width, 64 / img.height);
+          const sw = 64 / scale;
+          const sh = 64 / scale;
+          const sx = (img.width  - sw) / 2;
+          const sy = (img.height - sh) / 2;
+          ctx.drawImage(img, sx, sy, sw, sh, 0, 0, 64, 64);
+
+          // Use PNG for files that may have transparency, JPEG otherwise
+          const isPng  = file.type === 'image/png';
+          const dataUrl = isPng
+            ? canvas.toDataURL('image/png')
+            : canvas.toDataURL('image/jpeg', 0.9);
+
+          if (!dataUrl || dataUrl === 'data:,') {
+            showIndicator(roomId, 'Canvas fejlede — prøv et andet billede', true);
+            return;
+          }
+
+          // Show preview, hide emoji input
+          const preview  = document.getElementById('iconimg-'   + roomId);
+          const emojiInp = document.getElementById('icon-'      + roomId);
+          const clearBtn = document.getElementById('iconclear-' + roomId);
+          preview.src            = dataUrl;
+          preview.style.display  = 'block';
+          emojiInp.style.display = 'none';
+          clearBtn.style.display = 'block';
+
+          // Stage the change
+          pendingIconImages[roomId] = dataUrl;
+          markDirty(roomId);
+          showIndicator(roomId, '✓ Billede klar — klik Gem', false);
+        } catch(err) {
+          showIndicator(roomId, 'Fejl: ' + err.message, true);
+        }
       };
       img.src = e.target.result;
     };
     reader.readAsDataURL(file);
-    event.target.value = ''; // reset file input
+    event.target.value = '';
   }
 
   function clearIcon(roomId) {
@@ -898,6 +931,8 @@ const Admin = (() => {
   }
 
   function showIndicator(roomId, msg, isError) {
+    const ind = document.getElementById('ind-' + roomId);
+    if (!ind) return;
     ind.textContent = msg;
     ind.className = 'save-indicator show' + (isError ? ' error' : '');
     setTimeout(() => ind.classList.remove('show'), 3000);
@@ -1136,7 +1171,7 @@ const Admin = (() => {
   // ── Auto-login if session token saved ────────────────────────────────
   if (token) showAdmin();
 
-  return { login, logout, loadStats, loadRooms, saveRoom, kickRoom, markDirty, openEmojiPicker, changePassword, createRoom, deleteRoom, filterEmojis, saveAds };
+  return { login, logout, loadStats, loadRooms, saveRoom, kickRoom, markDirty, openEmojiPicker, changePassword, createRoom, deleteRoom, filterEmojis, saveAds, uploadIcon, clearIcon };
 })();
 </script>
 </body>
