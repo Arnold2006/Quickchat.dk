@@ -13,8 +13,8 @@ const crypto  = require('crypto');
 const app    = express();
 const server = http.createServer(app);
 const io     = new Server(server, {
-  cors: { origin: '*' },
-  maxHttpBufferSize: 4 * 1024 * 1024  // 4MB max payload (covers images up to ~3MB)
+  cors: { origin: process.env.ALLOWED_ORIGIN || false },
+  maxHttpBufferSize: 4 * 1024 * 1024
 });
 
 // ─── Config ──────────────────────────────────────────────────────────────────
@@ -23,6 +23,32 @@ const MAX_USERS_PER_ROOM = 20;
 const MAX_MSG_HISTORY    = 100;
 const MAX_MSG_LENGTH     = 500;
 const PORT               = process.env.PORT || 3000;
+
+// ─── Security headers ─────────────────────────────────────────────────────────
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  next();
+});
+
+// ─── Rate limiting (login brute-force protection) ─────────────────────────────
+const loginAttempts = new Map(); // ip → { count, resetAt }
+function checkLoginRate(ip) {
+  const now  = Date.now();
+  const entry = loginAttempts.get(ip) || { count: 0, resetAt: now + 15 * 60 * 1000 };
+  if (now > entry.resetAt) { entry.count = 0; entry.resetAt = now + 15 * 60 * 1000; }
+  entry.count++;
+  loginAttempts.set(ip, entry);
+  return entry.count <= 10; // max 10 attempts per 15 minutes
+}
+// Clean up old entries every 30 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, e] of loginAttempts) if (now > e.resetAt) loginAttempts.delete(ip);
+}, 30 * 60 * 1000);
 
 // ─── Password / Auth ──────────────────────────────────────────────────────────
 const fs           = require('fs');
@@ -236,6 +262,13 @@ io.on('connection', (socket) => {
     const room = rooms[user.roomId];
     if (!room || !room.users[socket.id]) return;
 
+    // Rate limit: max 5 messages per 2 seconds per user
+    const now = Date.now();
+    if (!user.msgTimes) user.msgTimes = [];
+    user.msgTimes = user.msgTimes.filter(t => now - t < 2000);
+    if (user.msgTimes.length >= 5) return; // silently drop
+    user.msgTimes.push(now);
+
     const msg = makeMessage(user.nickname, message);
     room.messages.push(msg);
     if (room.messages.length > MAX_MSG_HISTORY) room.messages.shift();
@@ -368,11 +401,16 @@ function adminAuth(req, res, next) {
 
 // Login
 app.post('/admin/login', (req, res) => {
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress;
+  if (!checkLoginRate(ip)) {
+    return res.status(429).json({ error: 'For mange forsøg — prøv igen om 15 minutter' });
+  }
   const { password } = req.body;
   if (!password) return res.status(400).json({ error: 'No password provided' });
   try {
     const ok = verifyPassword(password, auth.salt, auth.hash);
     if (ok) {
+      loginAttempts.delete(ip); // reset on success
       res.json({ ok: true, token: generateToken() });
     } else {
       res.status(401).json({ error: 'Wrong password' });
@@ -448,7 +486,7 @@ app.put('/admin/rooms/:roomId', adminAuth, (req, res) => {
   // iconImage: accept a base64 data URL, or null to clear it
   if (iconImage === null)        room.iconImage = null;
   if (iconImage && iconImage.startsWith('data:image/')) {
-    if (iconImage.length > 200 * 1024) return res.status(400).json({ error: 'Ikon-billede for stort (maks 200KB)' });
+    if (iconImage.length > 2 * 1024 * 1024) return res.status(400).json({ error: 'Ikon-billede for stort (maks 2MB)' });
     room.iconImage = iconImage;
   }
 
