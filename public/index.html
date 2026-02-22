@@ -507,6 +507,72 @@
     }
     .btn-send:hover { background: var(--orange-lt); }
 
+    .btn-emoji-help {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 1.1rem;
+      padding: 0 10px;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+      flex-shrink: 0;
+    }
+    .btn-emoji-help:hover { border-color: var(--orange); background: var(--bg2); }
+
+    /* ── Emoji help modal ── */
+    .emoji-help-overlay {
+      position: fixed; inset: 0;
+      z-index: 800;
+      display: none;
+    }
+    .emoji-help-overlay.show { display: block; }
+    .emoji-help-modal {
+      position: absolute;
+      bottom: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg2);
+      border: 1px solid var(--orange);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      width: 340px;
+      max-height: 340px;
+      overflow-y: auto;
+      box-shadow: 0 8px 32px rgba(0,0,0,.6);
+    }
+    .emoji-help-modal::-webkit-scrollbar { width: 4px; }
+    .emoji-help-modal::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+    .emoji-help-title {
+      font-size: .8rem;
+      font-weight: 700;
+      color: var(--orange);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+    .emoji-help-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px 12px;
+    }
+    .emoji-help-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 3px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background .1s;
+    }
+    .emoji-help-row:hover { background: var(--bg3); }
+    .emoji-help-code {
+      font-family: monospace;
+      font-size: .78rem;
+      color: var(--dim);
+      flex: 1;
+    }
+    .emoji-help-result { font-size: 1.1rem; }
+
     /* Users sidebar */
     .users-sidebar {
       width: 200px;
@@ -907,6 +973,7 @@
           <div class="messages-list" id="messagesList"></div>
           <div class="chat-input-bar">
             <input id="chatInput" type="text" maxlength="500" autocomplete="off" />
+            <button class="btn-emoji-help" onclick="App.toggleEmojiHelp()" id="btnEmojiHelp" title="Emoji koder">😊</button>
             <button class="btn-send" onclick="App.sendMessage()" id="btnSend"></button>
           </div>
         </div>
@@ -1083,7 +1150,7 @@
           <span class="msg-time">${fmtTime(msg.timestamp)}</span>
           <span class="msg-nick${isSelf ? ' self' : ''}"
                 data-nick="${escAttr(msg.nickname)}">${escHtml(msg.nickname)}</span>
-          <span class="msg-text">${escHtml(msg.message)}</span>`;
+          <span class="msg-text">${emojify(escHtml(msg.message))}</span>`;
         if (!isSelf) {
           el.querySelector('.msg-nick').addEventListener('click', e => {
             e.stopPropagation();
@@ -1313,7 +1380,7 @@
         el.querySelector('.btn-img-save').addEventListener('click', () => saveImage(msg.message));
       } else {
         el.innerHTML = `<span class="pnick${isSelf ? ' self' : ''}">${escHtml(msg.nickname)}:</span>
-                        <span class="ptext"> ${escHtml(msg.message)}</span>`;
+                        <span class="ptext"> ${emojify(escHtml(msg.message))}</span>`;
       }
 
       list.appendChild(el);
@@ -1395,6 +1462,51 @@
         .replace(/"/g,'&quot;');
     }
     function escAttr(str) { return escHtml(str); }
+
+    // ── Emoji substitution ────────────────────────────────────────────────
+    // Applied AFTER escHtml so we never touch raw HTML — only display text
+    const EMOJI_MAP = [
+      // Smileys
+      [/:-\)/g,  '😊'], [/:\)/g,   '😊'],
+      [/:-D/g,   '😄'], [/:D/g,    '😄'],
+      [/;-\)/g,  '😉'], [/;\)/g,   '😉'],
+      [/:-P/g,   '😛'], [/:P/g,    '😛'],
+      [/:-p/g,   '😛'], [/:p/g,    '😛'],
+      [/XD/g,    '😆'], [/xD/g,    '😆'],
+      [/:\*/g,   '😘'],
+      [/:-\*/g,  '😘'],
+      [/8-\)/g,  '😎'], [/B-\)/g,  '😎'],
+      // Sad / angry
+      [/:-\(/g,  '😞'], [/:\(/g,   '😞'],
+      [/:-\|/g,  '😐'], [/:\|/g,   '😐'],
+      [/:-\//g,  '😕'], [/:\/\b/g, '😕'],
+      [/>:-\(/g, '😠'], [/>:\(/g,  '😠'],
+      // Surprised
+      [/:-O/g,   '😮'], [/:O/g,    '😮'],
+      [/:-o/g,   '😮'], [/:o/g,    '😮'],
+      // Crying / love
+      [/;-\(/g,  '😢'], [/;\(/g,   '😢'],
+      [/<3/g,    '❤️'],
+      [/<\/3/g,  '💔'],
+      // Other common
+      [/\^\^/g,  '😊'],
+      [/:'-\)/g, '😂'], [/:'\)/g,  '😂'],
+      [/\(y\)/gi,'👍'],
+      [/\(n\)/gi,'👎'],
+      [/\(ok\)/gi,'👌'],
+      [/\(wave\)/gi,'👋'],
+      [/\(fire\)/gi,'🔥'],
+      [/\(party\)/gi,'🎉'],
+      [/\(star\)/gi,'⭐'],
+      [/\(heart\)/gi,'❤️'],
+      [/\(cool\)/gi,'😎'],
+    ];
+
+    function emojify(escaped) {
+      let s = escaped;
+      for (const [pattern, emoji] of EMOJI_MAP) s = s.replace(pattern, emoji);
+      return s;
+    }
 
     // ── Keyboard shortcuts ────────────────────────────────────────────────
     document.getElementById('nickInput').addEventListener('keydown', e => {
@@ -1658,6 +1770,54 @@
       document.querySelectorAll('.btn-img-save').forEach(b => b.textContent = L.saveImg);
     }
 
+    // ── Emoji help modal ──────────────────────────────────────────────────
+    const EMOJI_HELP_ROWS = [
+      [':-)  :)',   '😊'], [':-D  :D',   '😄'],
+      [';-)  ;)',   '😉'], [':-P  :P',   '😛'],
+      [':-( :(',    '😞'], [':-|  :|',   '😐'],
+      [':-O  :O',   '😮'], [':\')',       '😂'],
+      ['>:-(',      '😠'], ['^^',        '😊'],
+      ['<3',        '❤️'],  ['</3',       '💔'],
+      ['XD',        '😆'], [':-*  :*',   '😘'],
+      ['8-)  B-)',  '😎'], [';-(',       '😢'],
+      ['(y)',       '👍'], ['(n)',        '👎'],
+      ['(ok)',      '👌'], ['(wave)',     '👋'],
+      ['(fire)',    '🔥'], ['(party)',    '🎉'],
+      ['(star)',    '⭐'], ['(heart)',    '❤️'],
+      ['(cool)',    '😎'],
+    ];
+
+    let emojiHelpBuilt = false;
+
+    function toggleEmojiHelp() {
+      const overlay = document.getElementById('emojiHelpOverlay');
+      const isOpen  = overlay.classList.toggle('show');
+      if (isOpen && !emojiHelpBuilt) {
+        const grid = document.getElementById('emojiHelpGrid');
+        EMOJI_HELP_ROWS.forEach(([code, emoji]) => {
+          const row = document.createElement('div');
+          row.className = 'emoji-help-row';
+          row.title = 'Klik for at indsætte';
+          row.innerHTML = `<span class="emoji-help-result">${emoji}</span><span class="emoji-help-code">${escHtml(code)}</span>`;
+          row.addEventListener('click', () => {
+            const inp = document.getElementById('chatInput');
+            const pos = inp.selectionStart;
+            const val = inp.value;
+            // Insert first code variant (before spaces)
+            const insert = code.split(' ')[0] + ' ';
+            inp.value = val.slice(0, pos) + insert + val.slice(pos);
+            inp.focus();
+            inp.setSelectionRange(pos + insert.length, pos + insert.length);
+            overlay.classList.remove('show');
+          });
+          grid.appendChild(row);
+        });
+        emojiHelpBuilt = true;
+      }
+    }
+
+    // Close emoji help on Escape handled by main keydown listener below
+
     function openHiw() {
       const L = LANGS[currentLang];
       document.getElementById('hiwTitle').textContent    = L.hiwTitle;
@@ -1685,7 +1845,9 @@
 
     // Close on Escape key
     document.addEventListener('keydown', e => {
-      if (e.key === 'Escape') closeHiw();
+      if (e.key !== 'Escape') return;
+      closeHiw();
+      document.getElementById('emojiHelpOverlay').classList.remove('show');
     });
 
     function setLang(lang) {
@@ -1836,10 +1998,18 @@
       sendPrivate, togglePrivatePanel, closePrivate,
       acceptInvite, dismissInvite,
       pickImage, sendImage, saveImage, closeLightbox,
-      toggleMute, setLang, openHiw, closeHiw,
+      toggleMute, setLang, openHiw, closeHiw, toggleEmojiHelp,
     };
   })();
   </script>
+  <!-- ─── Emoji help modal ─────────────────────────────────────────────────── -->
+  <div class="emoji-help-overlay" id="emojiHelpOverlay" onclick="App.toggleEmojiHelp()">
+    <div class="emoji-help-modal" onclick="event.stopPropagation()">
+      <div class="emoji-help-title">😊 Emoji koder</div>
+      <div class="emoji-help-grid" id="emojiHelpGrid"></div>
+    </div>
+  </div>
+
   <!-- ─── How it works modal ──────────────────────────────────────────────── -->
   <div class="hiw-overlay" id="hiwOverlay" onclick="App.closeHiw(event)">
     <div class="hiw-modal">
