@@ -974,6 +974,7 @@
           <div class="chat-input-bar">
             <input id="chatInput" type="text" maxlength="500" autocomplete="off" />
             <button class="btn-emoji-help" onclick="App.toggleEmojiHelp()" id="btnEmojiHelp" title="Emoji koder">😊</button>
+            <button class="btn-emoji-help" onclick="App.toggleMute()" id="btnMainMute" title="Slå lyd fra">🔔</button>
             <button class="btn-send" onclick="App.sendMessage()" id="btnSend"></button>
           </div>
         </div>
@@ -1221,10 +1222,7 @@
       if (soundMuted) return;
       try {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
         const now = audioCtx.currentTime;
-
-        // Short sharp ping
         const osc  = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.connect(gain);
@@ -1239,13 +1237,43 @@
       } catch(e) {}
     }
 
+    function playJoin() {
+      if (soundMuted) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const now = audioCtx.currentTime;
+        // Two short ascending tones — "ding ding"
+        [0, 0.13].forEach((offset, i) => {
+          const osc  = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(i === 0 ? 660 : 880, now + offset);
+          gain.gain.setValueAtTime(0.25, now + offset);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.15);
+          osc.start(now + offset);
+          osc.stop(now + offset + 0.15);
+        });
+      } catch(e) {}
+    }
+
     function toggleMute(e) {
       e && e.stopPropagation();
       soundMuted = !soundMuted;
-      const btn = document.getElementById('privateMuteBtn');
-      btn.textContent = soundMuted ? '🔇' : '🔔';
-      btn.classList.toggle('muted', soundMuted);
-      btn.title = soundMuted ? t('unmuteTip') : t('muteTip');
+      // Private panel button
+      const privateBtn = document.getElementById('privateMuteBtn');
+      if (privateBtn) {
+        privateBtn.textContent = soundMuted ? '🔇' : '🔔';
+        privateBtn.classList.toggle('muted', soundMuted);
+        privateBtn.title = soundMuted ? t('unmuteTip') : t('muteTip');
+      }
+      // Main chat button
+      const mainBtn = document.getElementById('btnMainMute');
+      if (mainBtn) {
+        mainBtn.textContent = soundMuted ? '🔇' : '🔔';
+        mainBtn.title = soundMuted ? t('unmuteTip') : t('muteTip');
+      }
     }
 
     // ── Image sharing ─────────────────────────────────────────────────────
@@ -1543,7 +1571,11 @@
 
     socket.on('new-message', msg => appendMessage(msg));
 
-    socket.on('user-list', users => renderUserList(users));
+    socket.on('user-list', users => {
+      const prev = document.getElementById('usersList').querySelectorAll('.user-dot').length;
+      renderUserList(users);
+      if (state.currentRoom && users.length > prev) playJoin();
+    });
 
     socket.on('private-started', ({ prId, withNickname, messages }) => {
       showPrivatePanel(prId, withNickname, messages);
@@ -1762,6 +1794,8 @@
       document.getElementById('btnDismiss').textContent        = L.dismiss;
       const muteBtn = document.getElementById('privateMuteBtn');
       if (muteBtn) muteBtn.title = soundMuted ? L.unmuteTip : L.muteTip;
+      const mainMuteBtn = document.getElementById('btnMainMute');
+      if (mainMuteBtn) mainMuteBtn.title = soundMuted ? L.unmuteTip : L.muteTip;
       document.getElementById('btnHow').textContent = L.howBtn;
       // Language toggle buttons
       document.getElementById('langDa').classList.toggle('active', currentLang === 'da');
