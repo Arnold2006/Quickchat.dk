@@ -126,6 +126,74 @@
     }
     .btn-how:hover { border-color: var(--orange); color: var(--orange-lt); }
 
+    .lobby-btns {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: -12px auto 28px;
+    }
+    .lobby-btns .btn-how { margin: 0; }
+
+    /* ── Contact admin modal ── */
+    .contact-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.75);
+      z-index: 900;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .contact-overlay.show { display: flex; }
+    .contact-modal {
+      background: var(--bg2);
+      border: 1px solid var(--orange);
+      border-radius: var(--radius);
+      max-width: 480px;
+      width: 100%;
+      padding: 32px 36px;
+      position: relative;
+    }
+    .contact-close {
+      position: absolute; top: 14px; right: 18px;
+      background: none; border: none;
+      color: var(--gray-lt); font-size: 1.4rem;
+      cursor: pointer; line-height: 1;
+    }
+    .contact-close:hover { color: #fff; }
+    .contact-title { font-size: 1.2rem; font-weight: 800; color: #fff; margin-bottom: 6px; }
+    .contact-sub { font-size: .85rem; color: var(--dim); margin-bottom: 18px; line-height: 1.5; }
+    .contact-modal textarea {
+      width: 100%;
+      height: 130px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: inherit;
+      font-size: .92rem;
+      padding: 12px 14px;
+      resize: none;
+      outline: none;
+      margin-bottom: 12px;
+    }
+    .contact-modal textarea:focus { border-color: var(--orange); }
+    .contact-send {
+      background: var(--orange);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 10px 24px;
+      font-size: .95rem;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: background .15s;
+    }
+    .contact-send:hover { background: var(--orange-lt); }
+    .contact-send:disabled { background: var(--bg3); color: var(--dim); cursor: default; }
+    .contact-status { font-size: .82rem; text-align: center; margin-top: 10px; min-height: 18px; }
+
     /* ── How it works modal ── */
     .hiw-overlay {
       position: fixed; inset: 0;
@@ -342,7 +410,7 @@
       display: flex;
       flex: 1;
       overflow: hidden;
-      max-width: 1120px;
+      max-width: 1320px;
       width: 100%;
       margin: 0 auto;
     }
@@ -935,7 +1003,10 @@
     </div>
 
     <div class="welcome-strip" id="welcomeStrip"></div>
-    <button class="btn-how" id="btnHow" onclick="App.openHiw()"></button>
+    <div class="lobby-btns">
+      <button class="btn-how" id="btnHow" onclick="App.openHiw()"></button>
+      <button class="btn-how" id="btnContact" onclick="App.openContact()"></button>
+    </div>
 
     <div class="nick-bar">
       <input id="nickInput" type="text" maxlength="20" autocomplete="off" />
@@ -1654,6 +1725,14 @@
         unmuteTip:     'Slå lyd til',
         saveImg:       '💾 Gem',
         howBtn:        '🔍 Hvordan fungerer anonymiteten?',
+        contactBtn:    '✉️ Skriv til admin',
+        contactTitle:  'Skriv til admin',
+        contactSub:    'Send en anonym besked til administartoren. Du forbliver helt anonym — ingen svar muligt.',
+        contactPlaceholder: 'Din besked…',
+        contactSend:   'Send besked',
+        contactOk:     '✓ Besked sendt! Tak.',
+        contactErr:    'Noget gik galt — prøv igen.',
+        contactEmpty:  'Skriv en besked først.',
         hiwTitle:      'Hvordan fungerer anonymiteten?',
         hiwSubtitle:   'En simpel forklaring på hvorfor dine samtaler ikke kan spores',
         hiwSections: [
@@ -1727,6 +1806,14 @@
         unmuteTip:     'Unmute sounds',
         saveImg:       '💾 Save',
         howBtn:        '🔍 How does the anonymity work?',
+        contactBtn:    '✉️ Message the admin',
+        contactTitle:  'Message the admin',
+        contactSub:    'Send an anonymous message to the administrator. You remain completely anonymous — no reply possible.',
+        contactPlaceholder: 'Your message…',
+        contactSend:   'Send message',
+        contactOk:     '✓ Message sent! Thank you.',
+        contactErr:    'Something went wrong — please try again.',
+        contactEmpty:  'Please write a message first.',
         hiwTitle:      'How does the anonymity work?',
         hiwSubtitle:   'A plain-English explanation of why your conversations can\'t be traced',
         hiwSections: [
@@ -1774,33 +1861,34 @@
 
     function applyLang() {
       const L = LANGS[currentLang];
-      // Header
-      document.getElementById('tagline').textContent        = L.tagline;
-      document.getElementById('welcomeStrip').innerHTML     = L.welcome;
-      document.getElementById('nickInput').placeholder      = L.nickPlaceholder;
-      document.getElementById('btnSetName').textContent     = L.setName;
-      document.getElementById('roomsHeading').textContent   = L.chooseRoom;
-      // Chat room
-      document.getElementById('btnBack').textContent        = L.back;
-      document.getElementById('btnSend').textContent        = L.send;
-      document.getElementById('sidebarHead').textContent    = L.inThisRoom;
-      document.getElementById('chatInput').placeholder = L.typeMsg;
-      // Private panel
-      document.getElementById('privatePanelTitle').textContent = L.privatePanel;
-      document.getElementById('privateInput').placeholder = L.privateMsg;
-      document.getElementById('btnPrivateSend').textContent    = L.privateSend;
-      document.getElementById('btnImage').textContent          = L.sendImage;
-      document.getElementById('btnAccept').textContent         = L.accept;
-      document.getElementById('btnDismiss').textContent        = L.dismiss;
+      const set = (id, prop, val) => { const el = document.getElementById(id); if (el) el[prop] = val; };
+      set('tagline',           'textContent', L.tagline);
+      document.getElementById('welcomeStrip').innerHTML = L.welcome;
+      set('nickInput',         'placeholder', L.nickPlaceholder);
+      set('btnSetName',        'textContent', L.setName);
+      set('roomsHeading',      'textContent', L.chooseRoom);
+      set('btnBack',           'textContent', L.back);
+      set('btnSend',           'textContent', L.send);
+      set('sidebarHead',       'textContent', L.inThisRoom);
+      set('chatInput',         'placeholder', L.typeMsg);
+      set('privatePanelTitle', 'textContent', L.privatePanel);
+      set('privateInput',      'placeholder', L.privateMsg);
+      set('btnPrivateSend',    'textContent', L.privateSend);
+      set('btnImage',          'textContent', L.sendImage);
+      set('btnAccept',         'textContent', L.accept);
+      set('btnDismiss',        'textContent', L.dismiss);
       const muteBtn = document.getElementById('privateMuteBtn');
       if (muteBtn) muteBtn.title = soundMuted ? L.unmuteTip : L.muteTip;
       const mainMuteBtn = document.getElementById('btnMainMute');
       if (mainMuteBtn) mainMuteBtn.title = soundMuted ? L.unmuteTip : L.muteTip;
-      document.getElementById('btnHow').textContent = L.howBtn;
-      // Language toggle buttons
+      set('btnHow',        'textContent', L.howBtn);
+      set('btnContact',    'textContent', L.contactBtn);
+      set('contactTitle',  'textContent', L.contactTitle);
+      set('contactSub',    'textContent', L.contactSub);
+      set('contactMsg',    'placeholder', L.contactPlaceholder);
+      set('contactSend',   'textContent', L.contactSend);
       document.getElementById('langDa').classList.toggle('active', currentLang === 'da');
       document.getElementById('langEn').classList.toggle('active', currentLang === 'en');
-      // Update save image buttons already in DOM
       document.querySelectorAll('.btn-img-save').forEach(b => b.textContent = L.saveImg);
     }
 
@@ -1852,6 +1940,57 @@
 
     // Close emoji help on Escape handled by main keydown listener below
 
+    // ── Contact admin modal ───────────────────────────────────────────────
+    function openContact() {
+      const L = LANGS[currentLang];
+      document.getElementById('contactSend').textContent  = L.contactSend;
+      document.getElementById('contactTitle').textContent = L.contactTitle;
+      document.getElementById('contactSub').textContent   = L.contactSub;
+      document.getElementById('contactMsg').placeholder   = L.contactPlaceholder;
+      document.getElementById('contactMsg').value         = '';
+      document.getElementById('contactStatus').textContent = '';
+      document.getElementById('contactSend').disabled     = false;
+      document.getElementById('contactOverlay').classList.add('show');
+      document.body.style.overflow = 'hidden';
+      setTimeout(() => document.getElementById('contactMsg').focus(), 50);
+    }
+
+    function closeContact(e) {
+      if (e && e.target !== document.getElementById('contactOverlay')) return;
+      document.getElementById('contactOverlay').classList.remove('show');
+      document.body.style.overflow = '';
+    }
+
+    async function sendContact() {
+      const msg  = document.getElementById('contactMsg').value.trim();
+      const stat = document.getElementById('contactStatus');
+      const btn  = document.getElementById('contactSend');
+      if (!msg) { stat.style.color = 'var(--red-lt)'; stat.textContent = t('contactEmpty'); return; }
+
+      btn.disabled = true;
+      try {
+        const res = await fetch('/contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: msg }),
+        });
+        if (res.ok) {
+          stat.style.color = 'var(--green)';
+          stat.textContent = t('contactOk');
+          document.getElementById('contactMsg').value = '';
+          setTimeout(() => closeContact(), 2000);
+        } else {
+          stat.style.color = 'var(--red-lt)';
+          stat.textContent = t('contactErr');
+          btn.disabled = false;
+        }
+      } catch(e) {
+        stat.style.color = 'var(--red-lt)';
+        stat.textContent = t('contactErr');
+        btn.disabled = false;
+      }
+    }
+
     function openHiw() {
       const L = LANGS[currentLang];
       document.getElementById('hiwTitle').textContent    = L.hiwTitle;
@@ -1881,6 +2020,7 @@
     document.addEventListener('keydown', e => {
       if (e.key !== 'Escape') return;
       closeHiw();
+      closeContact();
       document.getElementById('emojiHelpOverlay').classList.remove('show');
     });
 
@@ -2032,10 +2172,22 @@
       sendPrivate, togglePrivatePanel, closePrivate,
       acceptInvite, dismissInvite,
       pickImage, sendImage, saveImage, closeLightbox,
-      toggleMute, setLang, openHiw, closeHiw, toggleEmojiHelp,
+      toggleMute, setLang, openHiw, closeHiw, toggleEmojiHelp, openContact, closeContact, sendContact,
     };
   })();
   </script>
+  <!-- ─── Contact admin modal ─────────────────────────────────────────────── -->
+  <div class="contact-overlay" id="contactOverlay" onclick="App.closeContact(event)">
+    <div class="contact-modal">
+      <button class="contact-close" onclick="App.closeContact()">✕</button>
+      <div class="contact-title" id="contactTitle"></div>
+      <div class="contact-sub" id="contactSub"></div>
+      <textarea id="contactMsg" maxlength="1000"></textarea>
+      <button class="contact-send" id="contactSend" onclick="App.sendContact()"></button>
+      <div class="contact-status" id="contactStatus"></div>
+    </div>
+  </div>
+
   <!-- ─── Emoji help modal ─────────────────────────────────────────────────── -->
   <div class="emoji-help-overlay" id="emojiHelpOverlay" onclick="App.toggleEmojiHelp()">
     <div class="emoji-help-modal" onclick="event.stopPropagation()">
