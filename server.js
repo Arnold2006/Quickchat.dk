@@ -632,6 +632,11 @@ function saveContact(msgs) {
   fs.writeFileSync(CONTACT_FILE, JSON.stringify(msgs, null, 2));
 }
 
+// Public endpoint — just the count, no message content
+app.get('/contact/count', (req, res) => {
+  res.json({ count: loadContact().length });
+});
+
 // Public POST — any user can submit
 app.post('/contact', (req, res) => {
   const { message } = req.body;
