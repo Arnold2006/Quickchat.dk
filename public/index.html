@@ -133,6 +133,22 @@
       margin: -12px auto 28px;
     }
     .lobby-btns .btn-how { margin: 0; }
+    .btn-how-wrap { position: relative; display: inline-block; }
+    .contact-count-badge {
+      position: absolute;
+      top: -7px; right: -7px;
+      background: var(--red-lt);
+      color: #fff;
+      font-size: .68rem;
+      font-weight: 700;
+      min-width: 18px;
+      height: 18px;
+      border-radius: 99px;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0 4px;
+      pointer-events: none;
+      display: none;
+    }
 
     /* ── Contact admin modal ── */
     .contact-overlay {
@@ -1005,7 +1021,10 @@
     <div class="welcome-strip" id="welcomeStrip"></div>
     <div class="lobby-btns">
       <button class="btn-how" id="btnHow" onclick="App.openHiw()"></button>
-      <button class="btn-how" id="btnContact" onclick="App.openContact()"></button>
+      <div class="btn-how-wrap">
+        <button class="btn-how" id="btnContact" onclick="App.openContact()"></button>
+        <span class="contact-count-badge" id="contactCountBadge"></span>
+      </div>
     </div>
 
     <div class="nick-bar">
@@ -1940,7 +1959,22 @@
 
     // Close emoji help on Escape handled by main keydown listener below
 
-    // ── Contact admin modal ───────────────────────────────────────────────
+    // ── Contact message count badge ───────────────────────────────────────
+    async function pollContactCount() {
+      try {
+        const res   = await fetch('/contact/count');
+        const data  = await res.json();
+        const badge = document.getElementById('contactCountBadge');
+        if (data.count > 0) {
+          badge.textContent    = data.count;
+          badge.style.display  = 'flex';
+        } else {
+          badge.style.display  = 'none';
+        }
+      } catch(e) {}
+    }
+    pollContactCount();
+    setInterval(pollContactCount, 30000); // refresh every 30 seconds
     function openContact() {
       const L = LANGS[currentLang];
       document.getElementById('contactSend').textContent  = L.contactSend;
@@ -1978,6 +2012,7 @@
           stat.style.color = 'var(--green)';
           stat.textContent = t('contactOk');
           document.getElementById('contactMsg').value = '';
+          pollContactCount();
           setTimeout(() => closeContact(), 2000);
         } else {
           stat.style.color = 'var(--red-lt)';
