@@ -161,6 +161,61 @@
     .drag-handle:active { cursor: grabbing; }
 
     /* ── Ads editor ── */
+    /* ── Contact inbox ── */
+    .contact-badge {
+      background: var(--orange);
+      color: #fff;
+      font-size: .72rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 99px;
+      margin-left: 10px;
+      vertical-align: middle;
+    }
+    .contact-inbox {
+      margin-bottom: 12px;
+    }
+    .contact-empty {
+      color: var(--dim);
+      font-size: .88rem;
+      padding: 16px 0;
+    }
+    .contact-msg {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .contact-msg-body { flex: 1; }
+    .contact-msg-text {
+      color: var(--text);
+      font-size: .9rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .contact-msg-time {
+      font-size: .75rem;
+      color: var(--dim);
+      margin-top: 6px;
+    }
+    .contact-msg-del {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--dim);
+      font-size: .8rem;
+      padding: 4px 10px;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: border-color .15s, color .15s;
+    }
+    .contact-msg-del:hover { border-color: var(--red-lt); color: var(--red-lt); }
+
     .ads-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -526,6 +581,16 @@
       </div>
     </div>
 
+    <!-- Beskeder fra brugere -->
+    <div class="section-title">
+      Beskeder fra brugere
+      <span class="contact-badge" id="contactBadge" style="display:none"></span>
+    </div>
+    <div id="contactInbox" class="contact-inbox">
+      <div class="contact-empty" id="contactEmpty">Ingen beskeder endnu</div>
+    </div>
+    <button class="btn-save" id="btnDeleteAll" style="margin-bottom:40px;display:none" onclick="Admin.deleteAllContact()">🗑️ Slet alle beskeder</button>
+
     <!-- Reklamer -->
     <div class="section-title">Reklamer</div>
     <div class="ads-grid">
@@ -680,6 +745,7 @@ const Admin = (() => {
     loadRooms();
     loadStats();
     loadAds();
+    loadContact();
     statsInterval = setInterval(loadStats, 10000);
   }
 
@@ -1122,6 +1188,57 @@ const Admin = (() => {
       ind.className   = 'save-indicator show error';
     }
   }
+  // ── Contact inbox ──────────────────────────────────────────────────────
+  async function loadContact() {
+    const msgs = await api('GET', '/admin/contact');
+    if (!msgs) return;
+
+    const inbox  = document.getElementById('contactInbox');
+    const empty  = document.getElementById('contactEmpty');
+    const badge  = document.getElementById('contactBadge');
+    const delAll = document.getElementById('btnDeleteAll');
+
+    inbox.innerHTML = '';
+    inbox.appendChild(empty);
+
+    if (msgs.length === 0) {
+      empty.style.display  = 'block';
+      badge.style.display  = 'none';
+      delAll.style.display = 'none';
+      return;
+    }
+
+    empty.style.display  = 'none';
+    badge.textContent    = msgs.length;
+    badge.style.display  = 'inline';
+    delAll.style.display = 'inline-block';
+
+    [...msgs].reverse().forEach(m => {
+      const div  = document.createElement('div');
+      div.className = 'contact-msg';
+      div.id = 'cmsg-' + m.id;
+      const date = new Date(m.timestamp).toLocaleString('da-DK');
+      div.innerHTML = `
+        <div class="contact-msg-body">
+          <div class="contact-msg-text">${escHtml(m.message)}</div>
+          <div class="contact-msg-time">📅 ${date}</div>
+        </div>
+        <button class="contact-msg-del" onclick="Admin.deleteContact('${m.id}')">🗑️ Slet</button>`;
+      inbox.appendChild(div);
+    });
+  }
+
+  async function deleteContact(id) {
+    const result = await api('DELETE', `/admin/contact/${id}`);
+    if (result?.ok) loadContact();
+  }
+
+  async function deleteAllContact() {
+    if (!confirm('Slet alle beskeder?')) return;
+    const result = await api('DELETE', '/admin/contact');
+    if (result?.ok) loadContact();
+  }
+
   async function changePassword() {
     const currentPw = document.getElementById('currentPw').value;
     const newPw     = document.getElementById('newPw').value;
@@ -1171,7 +1288,7 @@ const Admin = (() => {
   // ── Auto-login if session token saved ────────────────────────────────
   if (token) showAdmin();
 
-  return { login, logout, loadStats, loadRooms, saveRoom, kickRoom, markDirty, openEmojiPicker, changePassword, createRoom, deleteRoom, filterEmojis, saveAds, uploadIcon, clearIcon };
+  return { login, logout, loadStats, loadRooms, saveRoom, kickRoom, markDirty, openEmojiPicker, changePassword, createRoom, deleteRoom, filterEmojis, saveAds, uploadIcon, clearIcon, deleteContact, deleteAllContact };
 })();
 </script>
 </body>
