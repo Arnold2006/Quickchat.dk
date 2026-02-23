@@ -618,7 +618,50 @@ app.put('/admin/ads', adminAuth, (req, res) => {
   res.json({ ok: true });
 });
 
-// ─── Static files ─────────────────────────────────────────────────────────────
+// ─── Contact messages ─────────────────────────────────────────────────────────
+const CONTACT_FILE = path.join(__dirname, 'contact.json');
+
+function loadContact() {
+  if (fs.existsSync(CONTACT_FILE)) {
+    try { return JSON.parse(fs.readFileSync(CONTACT_FILE, 'utf8')); } catch(e) {}
+  }
+  return [];
+}
+
+function saveContact(msgs) {
+  fs.writeFileSync(CONTACT_FILE, JSON.stringify(msgs, null, 2));
+}
+
+// Public POST — any user can submit
+app.post('/contact', (req, res) => {
+  const { message } = req.body;
+  if (!message || typeof message !== 'string') return res.status(400).json({ error: 'Ingen besked' });
+  const text = message.trim().substring(0, 1000);
+  if (!text) return res.status(400).json({ error: 'Tom besked' });
+
+  const msgs = loadContact();
+  msgs.push({ id: crypto.randomUUID(), message: text, timestamp: Date.now() });
+  saveContact(msgs);
+  res.json({ ok: true });
+});
+
+// Admin: get all messages
+app.get('/admin/contact', adminAuth, (req, res) => {
+  res.json(loadContact());
+});
+
+// Admin: delete one message
+app.delete('/admin/contact/:id', adminAuth, (req, res) => {
+  const msgs = loadContact().filter(m => m.id !== req.params.id);
+  saveContact(msgs);
+  res.json({ ok: true });
+});
+
+// Admin: delete all messages
+app.delete('/admin/contact', adminAuth, (req, res) => {
+  saveContact([]);
+  res.json({ ok: true });
+});
 
 // Serve admin explicitly BEFORE static middleware so Apache rewrite rules can't intercept it
 app.get('/admin.html', (req, res) => {
