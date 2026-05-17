@@ -137,7 +137,7 @@ function escapeHtml(text) {
 
 function renderMessage(msg) {
     const div = document.createElement('div');
-    const time = new Date(msg.created_at).toLocaleTimeString('da-DK', {hour:'2-digit', minute:'2-digit'});
+    const time = new Date(msg.created_at.replace(' ', 'T')).toLocaleTimeString('da-DK', {hour:'2-digit', minute:'2-digit'});
 
     if (msg.username === '__system__') {
         div.className = 'msg msg-system';

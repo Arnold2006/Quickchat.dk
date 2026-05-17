@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config.php';
+session_write_close();
 header('Content-Type: application/json; charset=utf-8');
 
 $room_id = isset($_GET['room_id']) ? (int)$_GET['room_id'] : 0;
@@ -19,7 +20,7 @@ $stmt = db()->prepare("
       AND (
           is_private = 0
           OR username = '__system__'
-          OR (is_private = 1 AND (username = :viewer OR recipient = :viewer2))
+          OR (is_private = 1 AND (username = :viewer OR recipient = :viewer_recip))
       )
     ORDER BY id ASC
     LIMIT 100
@@ -28,7 +29,7 @@ $stmt->execute([
     ':room_id' => $room_id,
     ':last_id' => $last_id,
     ':viewer'  => $viewer,
-    ':viewer2' => $viewer,
+    ':viewer_recip' => $viewer,
 ]);
 $messages = $stmt->fetchAll();
 
