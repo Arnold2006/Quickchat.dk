@@ -171,7 +171,7 @@ function fetchMessages() {
                 const atBottom = area.scrollHeight - area.scrollTop - area.clientHeight < 60;
                 data.messages.forEach(msg => {
                     container.appendChild(renderMessage(msg));
-                    if (msg.id > lastId) lastId = msg.id;
+                    if (+msg.id > lastId) lastId = +msg.id;
                 });
                 if (atBottom) area.scrollTop = area.scrollHeight;
             }
@@ -236,7 +236,8 @@ function sendMessage() {
     formData.append('recipient', recipient);
 
     fetch('api/send.php', { method: 'POST', body: formData })
-        .then(() => {
+        .then(r => {
+            if (!r.ok) return;
             input.value = '';
             fetchMessages();
         })

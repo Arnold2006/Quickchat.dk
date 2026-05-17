@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config.php';
+session_write_close();
 header('Content-Type: application/json; charset=utf-8');
 
 $room_id  = isset($_GET['room_id'])  ? (int)$_GET['room_id']   : 0;
