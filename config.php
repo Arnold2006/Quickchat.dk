@@ -5,6 +5,14 @@ if (!function_exists('mb_strlen')) {
     }
 }
 
+if (!function_exists('mb_substr')) {
+    // Fallback for servers without the mbstring extension. Uses byte-based substr,
+    // which may truncate mid-character for multibyte strings, but avoids fatal errors.
+    function mb_substr(string $string, int $start, ?int $length = null, ?string $encoding = null): string {
+        return $length !== null ? substr($string, $start, $length) : substr($string, $start);
+    }
+}
+
 // Local overrides (not committed to git)
 $_config_local = realpath(__DIR__ . '/config-local.php');
 if ($_config_local !== false && dirname($_config_local) === __DIR__) {
