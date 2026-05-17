@@ -49,10 +49,11 @@ fi
 # Steps
 # ---------------------------------------------------------------------------
 echo "==> Pulling latest code..."
-git pull
+git pull origin main
 
 echo "==> Setting ownership of project files to ${WEB_USER}:${WEB_USER}..."
-chown -R "${WEB_USER}:${WEB_USER}" .
+find . -not -path './.git/*' -not -path './.git' \
+    | xargs chown "${WEB_USER}:${WEB_USER}"
 
 echo "==> Setting file permissions..."
 # Directories: 755, files: 644
