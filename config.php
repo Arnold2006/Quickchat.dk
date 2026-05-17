@@ -1,11 +1,11 @@
 <?php
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'quickchat');
-define('DB_USER', 'din_db_bruger');
-define('DB_PASS', 'dit_db_password');
+define('DB_USER', 'quickchat');
+define('DB_PASS', 'NY46ZRTR90wwZZ');
 define('MAX_USERS', 30);
 define('USER_TIMEOUT', 45);
-define('ADMIN_PASSWORD', 'SkiftMigUmiddelbart!');
+define('ADMIN_PASSWORD', 'NY46ZRTR90wwZZ');
 define('ADMIN_TOKEN', 'hemmelig_admin_url_token');
 
 function db(): PDO {
