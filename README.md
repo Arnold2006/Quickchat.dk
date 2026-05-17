@@ -1,153 +1,108 @@
-# QuickChat — Setup Guide for aapanel + Ubuntu 25.x
+# QuickChat.dk
 
-A no-registration anonymous chat server.  
-10 themed rooms · 20 users per room · Private "red" channels · Black/grey/orange theme.
-
----
-
-## Stack
-
-| Layer         | Technology                     |
-|---------------|-------------------------------|
-| Runtime       | Node.js 20 LTS                |
-| Real-time     | Socket.io 4                   |
-| Web server    | Express (static + API)        |
-| Reverse proxy | Apache (aapanel)              |
-| Storage       | In-memory (no DB needed)      |
+**QuickChat.dk** er en dansk, anonym chat-platform inspireret af den legendariske SuperChat.dk. Ingen registrering er nødvendig — vælg blot et brugernavn og hop ind i et chatrum.
 
 ---
 
-## 1. Install Node.js on your server
+## Funktioner
+
+- 💬 **Flere chatrum** — vælg mellem tilgængelige rum på forsiden
+- 👤 **100% anonymt** — ingen registrering eller konto
+- 🪟 **Hvert rum åbner i et nyt vindue** — vær i flere rum på én gang
+- 🔴 **Tale i Rødt** — privat én-til-én chat med rød tekst (se nedenfor)
+- 🔄 **Live opdatering** via AJAX polling (hvert 2. sekund)
+- 👥 **Max 30 brugere** pr. rum
+- ⚙️ **Skjult admin panel** til oprettelse og sletning af chatrum
+
+---
+
+## Krav
+
+- **PHP 8.x** eller nyere
+- **MySQL 5.7+** eller **MariaDB 10.x+**
+- **Apache** webserver med `mod_rewrite` aktiveret
+
+---
+
+## Installation
+
+### 1. Database
+
+Kør `install.sql` mod din MySQL/MariaDB server:
 
 ```bash
-# Via nvm (recommended — works alongside aapanel)
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-source ~/.bashrc
-nvm install 20
-nvm use 20
-node -v    # should show v20.x.x
+mysql -u din_bruger -p < install.sql
 ```
 
----
+Dette opretter databasen `quickchat` med tabellerne `rooms`, `messages` og `room_users`, samt tre standard chatrum.
 
-## 2. Upload and install the app
+### 2. Konfiguration
 
-```bash
-# Copy the chat-server folder to your server, e.g.:
-scp -r chat-server/ root@your-server-ip:/www/wwwroot/quickchat/
+Åbn `config.php` og ret følgende konstanter:
 
-# On the server:
-cd /www/wwwroot/quickchat
-npm install
+```php
+define('DB_HOST', 'localhost');             // Database host
+define('DB_NAME', 'quickchat');             // Database navn
+define('DB_USER', 'dit_db_brugernavn');     // Database bruger
+define('DB_PASS', 'dit_db_password');       // Database adgangskode
+define('MAX_USERS', 30);                    // Maks brugere per rum
+define('USER_TIMEOUT', 45);                 // Sekunder før bruger anses som offline
+define('ADMIN_PASSWORD', 'dit-stærke-password-her');     // Admin adgangskode – SKIFT DETTE!
+define('ADMIN_TOKEN', 'dit-tilfældige-url-token-her');   // URL-token til admin panel – SKIFT DETTE!
 ```
 
----
+> ⚠️ **Vigtigt:** Skift både `ADMIN_PASSWORD` og `ADMIN_TOKEN` til noget unikt og sikkert, inden du sætter siden i drift.
 
-## 3. Run as a service with PM2 (so it survives reboots)
+### 3. Webserver
 
-```bash
-npm install -g pm2
-
-# Start
-pm2 start server.js --name quickchat
-
-# Auto-start on boot
-pm2 startup
-pm2 save
-
-# Useful commands
-pm2 logs quickchat       # live logs
-pm2 restart quickchat    # restart
-pm2 status               # overview
-```
+Placer filerne i din Apache webservers dokument-rod (f.eks. `/var/www/html/quickchat`). Sørg for at `AllowOverride All` er aktiveret i din Apache-konfiguration, så `.htaccess` virker korrekt.
 
 ---
 
-## 4. Configure Apache reverse proxy in aapanel
+## Admin panel
 
-### Enable required Apache modules (run once):
-```bash
-sudo a2enmod proxy proxy_http proxy_wstunnel rewrite headers
-sudo systemctl restart apache2
-```
+Admin-panelet er beskyttet bag to lag:
 
-### In aapanel:
-1. Go to **Website** → **Add Site**
-2. Set your domain (e.g. `chat.yourdomain.com`)
-3. After creation, click **Config** → **Apache config**
-4. Replace the contents with the `apache.conf` file provided
-5. Change `chat.yourdomain.com` to your actual domain
-6. Save and reload Apache
+1. **URL-token:** Naviger til `https://quickchat.dk/admin/panel.php?token=DIT_ADMIN_TOKEN`
+   - Forkert token returnerer HTTP 404.
+2. **Adgangskode:** Indtast den adgangskode du har sat i `ADMIN_PASSWORD`.
 
-### Free SSL (recommended):
-In aapanel, go to your site → **SSL** → **Let's Encrypt** → issue a certificate.  
-Then uncomment the HTTPS block in `apache.conf`.
+Via admin-panelet kan du:
+- Oprette nye chatrum
+- Slette eksisterende chatrum (bekræftelse kræves)
+- Se antal online brugere og beskeder per rum
 
 ---
 
-## 5. Open firewall port (if needed)
+## "Tale i Rødt"
 
-The Node app runs on port **3000** internally — Apache proxies it, so port 3000
-does NOT need to be open externally. Only ports 80 and 443 should be public.
+**"Tale i Rødt"** er QuickChat.dk's funktion til privat én-til-én chat — direkte inspireret af SuperChat.dk's ikoniske funktion:
 
-If aapanel has a firewall panel, make sure **80** and **443** are open.
-
----
-
-## 6. Customise the app
-
-### Change room names/themes
-Edit the `ROOM_DEFS` array in `server.js`:
-```js
-const ROOM_DEFS = [
-  { name: 'General',   icon: '💬', description: 'Just talk about anything' },
-  // ... 9 more rows
-];
-```
-
-### Change limits
-```js
-const MAX_ROOMS          = 10;   // total rooms
-const MAX_USERS_PER_ROOM = 20;   // users per room
-const MAX_MSG_HISTORY    = 100;  // messages kept in RAM per room
-const MAX_MSG_LENGTH     = 500;  // max characters per message
-```
-
-### Change welcome text / site name
-Edit `public/index.html` — search for `QuickChat` and `welcome-strip`.
-
-### Change colours
-Edit the `:root { }` block at the top of the `<style>` section in `index.html`.
+1. I chatrummet ses en **dropdown-liste** ("Tal i Rødt med:") øverst i inputfeltet.
+2. Vælg den bruger du vil tale privat med.
+3. Dine beskeder sendes **kun til den valgte bruger** (og dig selv).
+4. Private beskeder vises med **rød tekst** og rød venstre-kant — deraf udtrykket *"at tale i rødt"*.
+5. Vælg **"-- Alle (offentlig) --"** for at sende beskeder til hele rummet igen.
 
 ---
 
-## How private ("red") chat works
-
-1. In a room, click any username → a menu pops up with **🔴 Private chat**
-2. A red panel opens at the bottom-right of the screen
-3. The other user gets an invite banner — they click **Accept**
-4. Only those two users can see the messages (separate Socket.io room)
-5. Messages are in-memory only — they vanish when both close the panel
-
----
-
-## Notes
-
-- **No database required** — all state is in RAM. Messages are lost on restart.
-- If you want persistent message history, add a MySQL/SQLite layer to `server.js`.
-- The server handles up to ~1000 concurrent sockets comfortably on a basic VPS.
-- Nicknames are unique per room only (same nick can exist in different rooms).
-
----
-
-## File structure
+## Filstruktur
 
 ```
-quickchat/
-├── server.js          ← Node.js + Socket.io backend
-├── package.json       ← dependencies
-├── apache.conf        ← Apache reverse proxy config
-├── README.md          ← this file
-└── public/
-    └── index.html     ← complete single-file frontend
+config.php          – Database og konfiguration
+install.sql         – SQL til oprettelse af database og tabeller
+index.php           – Forside med rumoversigt
+chat.php            – Chatrum
+api/
+  fetch.php         – Hent nye beskeder (AJAX)
+  send.php          – Send besked (AJAX)
+  users.php         – Liste over online brugere (AJAX)
+  heartbeat.php     – Opdater brugerens online-status (AJAX)
+  leave.php         – Forlad chatrum (AJAX / sendBeacon)
+  rooms.php         – Rumliste med brugerantal (AJAX)
+admin/
+  panel.php         – Admin panel
+css/
+  style.css         – Mørkt tema (mørkeblå + rød accent)
+.htaccess           – Beskytter config.php
 ```
