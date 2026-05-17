@@ -268,6 +268,8 @@ document.getElementById('message-input').addEventListener('keydown', function(e)
 
 window.addEventListener('beforeunload', leaveRoom);
 
+document.getElementById('recipient-select').addEventListener('focus', fetchUsers);
+
 // ---- Start ----
 
 poll();
