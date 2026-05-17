@@ -270,6 +270,15 @@ window.addEventListener('beforeunload', leaveRoom);
 
 document.getElementById('recipient-select').addEventListener('focus', fetchUsers);
 
+// Kør heartbeat + bruger-liste straks når fanen bliver synlig igen,
+// så browser-throttling af baggrunds-faner ikke får brugeren til at time ud.
+document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') {
+        heartbeat();
+        fetchUsers();
+    }
+});
+
 // ---- Start ----
 
 poll();
