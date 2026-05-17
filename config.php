@@ -26,7 +26,7 @@ defined('DB_NAME')        || define('DB_NAME',        'quickchat');
 defined('DB_USER')        || define('DB_USER',        'quickchat');
 defined('DB_PASS')        || define('DB_PASS',        'changeme');
 defined('MAX_USERS')      || define('MAX_USERS',      30);
-defined('USER_TIMEOUT')   || define('USER_TIMEOUT',   45);
+defined('USER_TIMEOUT')   || define('USER_TIMEOUT',   90);
 defined('ADMIN_PASSWORD') || define('ADMIN_PASSWORD', 'changeme');
 defined('ADMIN_TOKEN')    || define('ADMIN_TOKEN',    'changeme');
 
