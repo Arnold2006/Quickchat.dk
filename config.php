@@ -1,4 +1,10 @@
 <?php
+if (!function_exists('mb_strlen')) {
+    function mb_strlen(string $string, ?string $encoding = null): int {
+        return strlen($string);
+    }
+}
+
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'quickchat');
 define('DB_USER', 'quickchat');
