@@ -92,10 +92,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         $neighbour->execute([':s' => $cur]);
                         $nb = $neighbour->fetch();
                         if ($nb) {
+                            db()->beginTransaction();
                             db()->prepare("UPDATE categories SET sort_order = :s WHERE id = :id")
                                 ->execute([':s' => $nb['sort_order'], ':id' => $id]);
                             db()->prepare("UPDATE categories SET sort_order = :s WHERE id = :id")
                                 ->execute([':s' => $cur, ':id' => $nb['id']]);
+                            db()->commit();
                         }
                     }
                 }
@@ -123,10 +125,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         $neighbour->execute([':c' => $cat_id, ':s' => $cur]);
                         $nb = $neighbour->fetch();
                         if ($nb) {
+                            db()->beginTransaction();
                             db()->prepare("UPDATE rooms SET sort_order = :s WHERE id = :id")
                                 ->execute([':s' => $nb['sort_order'], ':id' => $id]);
                             db()->prepare("UPDATE rooms SET sort_order = :s WHERE id = :id")
                                 ->execute([':s' => $cur, ':id' => $nb['id']]);
+                            db()->commit();
                         }
                     }
                 }
