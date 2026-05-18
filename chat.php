@@ -125,7 +125,7 @@ qc_add_message($room_id, '__system__', $username . ' er trådt ind i rummet');
                 type="text"
                 id="message-input"
                 class="text-input message-input"
-                placeholder="Skriv en besked… (eller træk et billede hertil)"
+                placeholder="Skriv en besked…"
                 maxlength="<?= MAX_MESSAGE_LEN ?>"
                 autocomplete="off">
             <button class="btn-send" onclick="sendMessage()">Send</button>
@@ -314,7 +314,7 @@ function sendMessage() {
     // Send eventuel tekst først, derefter billede
     const jobs = [];
     if (text)         { input.value = ''; updatePrivateStyle(); jobs.push(() => doSend(text)); }
-    if (pendingImage) { cancelImage(); jobs.push(() => doSend(IMG_TAG_START + pendingImage + IMG_TAG_END)); }
+    if (pendingImage) { const imgData = pendingImage; cancelImage(); jobs.push(() => doSend(IMG_TAG_START + imgData + IMG_TAG_END)); }
     jobs.reduce((p, fn) => p.then(fn), Promise.resolve());
 }
 
@@ -344,7 +344,7 @@ function updatePrivateStyle() {
     const recipient = document.getElementById('recipient-select').value;
     if (recipient) {
         input.classList.add('private-mode');
-        input.placeholder = 'Privat besked til ' + recipient + '…';
+        input.placeholder = 'Privat besked til ' + recipient + '… (eller træk et billede hertil)';
     } else {
         input.classList.remove('private-mode');
         input.placeholder = 'Skriv en besked…';
@@ -363,6 +363,11 @@ function cancelImage() {
 
 function handleImageFile(file) {
     if (!file || !file.type.startsWith('image/')) return;
+    const recipient = document.getElementById('recipient-select').value;
+    if (!recipient) {
+        alert('Billeder kan kun sendes som private beskeder. Vælg en modtager i "Tale i Rødt" først.');
+        return;
+    }
     if (file.size > MAX_IMG_BYTES) {
         const maxKb = Math.round(MAX_IMG_BYTES * 0.75 / 1024);
         alert('Billedet er for stort. Maksimum er ca. ' + maxKb + ' KB.');
@@ -385,7 +390,8 @@ function handleImageFile(file) {
         const hasImage = Array.from(e.dataTransfer.items || []).some(
             i => i.kind === 'file' && i.type.startsWith('image/')
         );
-        if (!hasImage) return;
+        const recipient = document.getElementById('recipient-select').value;
+        if (!hasImage || !recipient) return;
         e.preventDefault();
         zone.classList.add('drag-over');
     });

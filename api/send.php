@@ -39,6 +39,12 @@ $is_image = (bool) preg_match(
     $message
 );
 if ($is_image) {
+    // Billeder må kun sendes som private beskeder
+    if (empty($recipient)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Billeder kan kun sendes som private beskeder']);
+        exit;
+    }
     // Max overhead for [IMG]data:image/<type>;base64,[/IMG]-tags er 40 bytes (konservativt).
     if (strlen($message) > MAX_IMAGE_SIZE + 40) {
         http_response_code(413);
