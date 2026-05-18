@@ -159,6 +159,21 @@ body {
 .btn-danger                { background: var(--red); color: #fff; }
 .btn-danger:hover          { background: var(--red-h); }
 
+.btn-move {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: .25rem .55rem;
+    font-size: .8rem;
+    background: var(--surface2);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background .15s;
+    line-height: 1;
+}
+.btn-move:hover            { background: #e0d4c8; color: var(--text); }
+
+.sort-btns                 { white-space: nowrap; }
+
 .btn-send                  { background: var(--green); color: #fff; padding: .55rem 1.4rem; }
 .btn-send:hover            { background: #16a34a; }
 

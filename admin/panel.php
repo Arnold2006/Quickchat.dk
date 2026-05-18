@@ -71,6 +71,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 }
                 break;
 
+            case 'move_category':
+                $id  = (int)($_POST['cat_id']    ?? 0);
+                $dir = ($_POST['direction'] ?? '') === 'up' ? 'up' : 'down';
+                if ($id) {
+                    $row = db()->prepare("SELECT sort_order FROM categories WHERE id = :id");
+                    $row->execute([':id' => $id]);
+                    $cur = $row->fetchColumn();
+                    if ($cur !== false) {
+                        $cur = (int)$cur;
+                        if ($dir === 'up') {
+                            $neighbour = db()->prepare(
+                                "SELECT id, sort_order FROM categories WHERE sort_order < :s ORDER BY sort_order DESC LIMIT 1"
+                            );
+                        } else {
+                            $neighbour = db()->prepare(
+                                "SELECT id, sort_order FROM categories WHERE sort_order > :s ORDER BY sort_order ASC LIMIT 1"
+                            );
+                        }
+                        $neighbour->execute([':s' => $cur]);
+                        $nb = $neighbour->fetch();
+                        if ($nb) {
+                            db()->prepare("UPDATE categories SET sort_order = :s WHERE id = :id")
+                                ->execute([':s' => $nb['sort_order'], ':id' => $id]);
+                            db()->prepare("UPDATE categories SET sort_order = :s WHERE id = :id")
+                                ->execute([':s' => $cur, ':id' => $nb['id']]);
+                        }
+                    }
+                }
+                break;
+
+            case 'move_room':
+                $id     = (int)($_POST['room_id']   ?? 0);
+                $cat_id = (int)($_POST['cat_id']    ?? 0);
+                $dir    = ($_POST['direction'] ?? '') === 'up' ? 'up' : 'down';
+                if ($id && $cat_id) {
+                    $row = db()->prepare("SELECT sort_order FROM rooms WHERE id = :id AND category_id = :c");
+                    $row->execute([':id' => $id, ':c' => $cat_id]);
+                    $cur = $row->fetchColumn();
+                    if ($cur !== false) {
+                        $cur = (int)$cur;
+                        if ($dir === 'up') {
+                            $neighbour = db()->prepare(
+                                "SELECT id, sort_order FROM rooms WHERE category_id = :c AND sort_order < :s ORDER BY sort_order DESC LIMIT 1"
+                            );
+                        } else {
+                            $neighbour = db()->prepare(
+                                "SELECT id, sort_order FROM rooms WHERE category_id = :c AND sort_order > :s ORDER BY sort_order ASC LIMIT 1"
+                            );
+                        }
+                        $neighbour->execute([':c' => $cat_id, ':s' => $cur]);
+                        $nb = $neighbour->fetch();
+                        if ($nb) {
+                            db()->prepare("UPDATE rooms SET sort_order = :s WHERE id = :id")
+                                ->execute([':s' => $nb['sort_order'], ':id' => $id]);
+                            db()->prepare("UPDATE rooms SET sort_order = :s WHERE id = :id")
+                                ->execute([':s' => $cur, ':id' => $nb['id']]);
+                        }
+                    }
+                }
+                break;
+
             case 'save_front_page_text':
                 $text = $_POST['front_page_text'] ?? '';
                 $s = db()->prepare(
@@ -235,18 +296,36 @@ if (!$loginNeeded) {
 
         <table class="admin-table">
             <thead>
-                <tr><th>ID</th><th>Ikon</th><th>Navn</th><th>Beskrivelse</th><th>Rum</th><th></th></tr>
+                <tr><th>ID</th><th>Ikon</th><th>Navn</th><th>Beskrivelse</th><th>Rum</th><th>Rækkefølge</th><th></th></tr>
             </thead>
             <tbody>
             <?php if (empty($categories)): ?>
-                <tr><td colspan="6" class="td-empty">Ingen kategorier.</td></tr>
-            <?php else: foreach ($categories as $cat): ?>
+                <tr><td colspan="7" class="td-empty">Ingen kategorier.</td></tr>
+            <?php else: foreach ($categories as $i => $cat): ?>
                 <tr>
                     <td><?= (int)$cat['id'] ?></td>
                     <td><?= htmlspecialchars($cat['icon']) ?></td>
                     <td><?= htmlspecialchars($cat['name']) ?></td>
                     <td><?= htmlspecialchars($cat['description']) ?></td>
                     <td><?= count($rooms_by_cat[(int)$cat['id']] ?? []) ?></td>
+                    <td class="sort-btns">
+                        <?php if ($i > 0): ?>
+                        <form method="POST" action="?token=<?= htmlspecialchars($token, ENT_QUOTES) ?>" style="display:inline;">
+                            <input type="hidden" name="action"    value="move_category">
+                            <input type="hidden" name="cat_id"    value="<?= (int)$cat['id'] ?>">
+                            <input type="hidden" name="direction" value="up">
+                            <button type="submit" class="btn-move" title="Flyt op">▲</button>
+                        </form>
+                        <?php endif; ?>
+                        <?php if ($i < count($categories) - 1): ?>
+                        <form method="POST" action="?token=<?= htmlspecialchars($token, ENT_QUOTES) ?>" style="display:inline;">
+                            <input type="hidden" name="action"    value="move_category">
+                            <input type="hidden" name="cat_id"    value="<?= (int)$cat['id'] ?>">
+                            <input type="hidden" name="direction" value="down">
+                            <button type="submit" class="btn-move" title="Flyt ned">▼</button>
+                        </form>
+                        <?php endif; ?>
+                    </td>
                     <td>
                         <form method="POST" action="?token=<?= htmlspecialchars($token, ENT_QUOTES) ?>"
                               onsubmit="return confirm('Slet kategorien og alle dens rum?')">
@@ -285,16 +364,36 @@ if (!$loginNeeded) {
         </h3>
         <table class="admin-table">
             <thead>
-                <tr><th>ID</th><th>Navn</th><th>Online</th><th></th></tr>
+                <tr><th>ID</th><th>Navn</th><th>Online</th><th>Rækkefølge</th><th></th></tr>
             </thead>
             <tbody>
             <?php if (empty($rooms_by_cat[(int)$cat['id']])): ?>
-                <tr><td colspan="4" class="td-empty">Ingen rum i denne kategori.</td></tr>
-            <?php else: foreach ($rooms_by_cat[(int)$cat['id']] as $room): ?>
+                <tr><td colspan="5" class="td-empty">Ingen rum i denne kategori.</td></tr>
+            <?php else: $cat_rooms = $rooms_by_cat[(int)$cat['id']]; foreach ($cat_rooms as $ri => $room): ?>
                 <tr>
                     <td><?= (int)$room['id'] ?></td>
                     <td><?= htmlspecialchars($room['name']) ?></td>
                     <td><?= apcu_ok() ? qc_user_count((int)$room['id']) : '?' ?>/<?= MAX_USERS ?></td>
+                    <td class="sort-btns">
+                        <?php if ($ri > 0): ?>
+                        <form method="POST" action="?token=<?= htmlspecialchars($token, ENT_QUOTES) ?>" style="display:inline;">
+                            <input type="hidden" name="action"    value="move_room">
+                            <input type="hidden" name="room_id"   value="<?= (int)$room['id'] ?>">
+                            <input type="hidden" name="cat_id"    value="<?= (int)$cat['id'] ?>">
+                            <input type="hidden" name="direction" value="up">
+                            <button type="submit" class="btn-move" title="Flyt op">▲</button>
+                        </form>
+                        <?php endif; ?>
+                        <?php if ($ri < count($cat_rooms) - 1): ?>
+                        <form method="POST" action="?token=<?= htmlspecialchars($token, ENT_QUOTES) ?>" style="display:inline;">
+                            <input type="hidden" name="action"    value="move_room">
+                            <input type="hidden" name="room_id"   value="<?= (int)$room['id'] ?>">
+                            <input type="hidden" name="cat_id"    value="<?= (int)$cat['id'] ?>">
+                            <input type="hidden" name="direction" value="down">
+                            <button type="submit" class="btn-move" title="Flyt ned">▼</button>
+                        </form>
+                        <?php endif; ?>
+                    </td>
                     <td>
                         <form method="POST" action="?token=<?= htmlspecialchars($token, ENT_QUOTES) ?>"
                               onsubmit="return confirm('Slet rummet?')">
