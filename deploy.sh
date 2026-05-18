@@ -73,3 +73,4 @@ echo "    Webserver-bruger : ${WEB_USER}"
 echo ""
 echo "    Husk: config-local.php skal eksistere på serveren med dine rigtige"
 echo "    DB-oplysninger og admin-adgangskoder (brug config-local.php.example)."
+
