@@ -1,36 +1,28 @@
 <?php
 require_once __DIR__ . '/../config.php';
-session_write_close();
 header('Content-Type: application/json; charset=utf-8');
 
 $room_id = isset($_GET['room_id']) ? (int)$_GET['room_id'] : 0;
 $last_id = isset($_GET['last_id']) ? (int)$_GET['last_id'] : 0;
 $viewer  = isset($_GET['viewer'])  ? trim($_GET['viewer'])  : '';
 
-if (!$room_id) {
+if (!$room_id || !apcu_ok()) {
     echo json_encode(['messages' => []]);
     exit;
 }
 
-$stmt = db()->prepare("
-    SELECT id, room_id, username, message, is_private, recipient, created_at
-    FROM messages
-    WHERE room_id = :room_id
-      AND id > :last_id
-      AND (
-          is_private = 0
-          OR username = '__system__'
-          OR (is_private = 1 AND (username = :viewer OR recipient = :viewer_recip))
-      )
-    ORDER BY id ASC
-    LIMIT 100
-");
-$stmt->execute([
-    ':room_id' => $room_id,
-    ':last_id' => $last_id,
-    ':viewer'  => $viewer,
-    ':viewer_recip' => $viewer,
-]);
-$messages = $stmt->fetchAll();
+$all    = qc_get_messages($room_id);
+$result = [];
 
-echo json_encode(['messages' => $messages]);
+foreach ($all as $msg) {
+    if ($msg['id'] <= $last_id) continue;
+
+    // Private beskeder vises kun til afsender og modtager
+    if ($msg['is_private'] && $msg['username'] !== '__system__') {
+        if ($msg['username'] !== $viewer && $msg['recipient'] !== $viewer) continue;
+    }
+
+    $result[] = $msg;
+}
+
+echo json_encode(['messages' => $result]);
