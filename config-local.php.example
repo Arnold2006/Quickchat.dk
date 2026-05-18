@@ -1,0 +1,17 @@
+<?php
+// ---------------------------------------------------------------------------
+// config-local.php.example
+//
+// Kopiér denne fil til config-local.php og udfyld dine egne værdier.
+// config-local.php er gitignored og committes ALDRIG.
+// ---------------------------------------------------------------------------
+
+// Databaseforbindelse
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'quickchat');
+define('DB_USER', 'quickchat');
+define('DB_PASS', 'dit-rigtige-password');
+
+// Admin-adgang – SKAL sættes til noget unikt på produktionsserveren
+define('ADMIN_PASSWORD', 'et-sikkert-admin-password');
+define('ADMIN_TOKEN',    'et-hemmeligt-token');
