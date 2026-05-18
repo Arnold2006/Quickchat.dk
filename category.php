@@ -130,7 +130,7 @@ function joinRoom() {
               + '&username=' + encodeURIComponent(username);
 
     closeModal();
-    window.location.href = url;
+    window.open(url, '_blank', 'noopener,noreferrer,width=900,height=700');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
