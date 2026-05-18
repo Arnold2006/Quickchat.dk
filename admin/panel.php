@@ -71,6 +71,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 }
                 break;
 
+            case 'save_front_page_text':
+                $text = $_POST['front_page_text'] ?? '';
+                $s = db()->prepare(
+                    "INSERT INTO site_config (`key`, `value`) VALUES ('front_page_text', :v)
+                     ON DUPLICATE KEY UPDATE `value` = :v"
+                );
+                $s->execute([':v' => $text]);
+                $msg = 'Forsidetekst gemt.';
+                break;
+
             case 'logout':
                 $_SESSION['admin_auth'] = false;
                 $loginNeeded = true;
@@ -82,6 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 // Data til admin-panel
 $categories   = [];
 $rooms_by_cat = [];
+$front_page_text = '';
 if (!$loginNeeded) {
     $categories = db()->query(
         "SELECT * FROM categories ORDER BY sort_order, name"
@@ -97,6 +108,9 @@ if (!$loginNeeded) {
     foreach ($all_rooms as $r) {
         $rooms_by_cat[(int)$r['category_id']][] = $r;
     }
+
+    $row = db()->query("SELECT `value` FROM site_config WHERE `key` = 'front_page_text'")->fetch();
+    $front_page_text = $row ? $row['value'] : '';
 }
 ?>
 <!DOCTYPE html>
@@ -147,6 +161,22 @@ if (!$loginNeeded) {
     <?php if (!empty($msg)): ?>
         <div class="admin-msg"><?= htmlspecialchars($msg) ?></div>
     <?php endif; ?>
+
+    <!-- ── Forsidetekst ─────────────────────────────────────────── -->
+    <section class="admin-section">
+        <h2>Forsidetekst</h2>
+        <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:.75rem;">
+            Denne tekst vises på forsiden over kategorierne. Lad feltet være tomt for at skjule den.
+        </p>
+        <form method="POST" action="?token=<?= htmlspecialchars($token, ENT_QUOTES) ?>" class="admin-form" style="flex-direction:column;align-items:stretch;">
+            <input type="hidden" name="action" value="save_front_page_text">
+            <textarea name="front_page_text" class="text-input" rows="5"
+                      placeholder="Skriv en velkomsttekst til forsiden…"
+                      maxlength="2000"
+                      style="resize:vertical;"><?= htmlspecialchars($front_page_text) ?></textarea>
+            <button type="submit" class="btn-primary" style="align-self:flex-start;margin-top:.5rem;">Gem tekst</button>
+        </form>
+    </section>
 
     <!-- ── Kategorier ────────────────────────────────────────── -->
     <section class="admin-section">
