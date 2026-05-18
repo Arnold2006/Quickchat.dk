@@ -105,7 +105,7 @@ qc_add_message($room_id, '__system__', $username . ' er trådt ind i rummet');
     </div>
 
     <!-- Inputfelt -->
-    <div class="chat-input-area">
+    <div class="chat-input-area" id="chat-input-area">
         <div class="input-row">
             <label for="recipient-select">Tale i Rødt:</label>
             <select id="recipient-select" class="select-input">
@@ -115,12 +115,17 @@ qc_add_message($room_id, '__system__', $username . ' er trådt ind i rummet');
                 ↻ Opdater liste
             </button>
         </div>
+        <!-- Billedforhåndsvisning (vises kun når et billede er droppet) -->
+        <div id="img-preview-area" class="img-preview-area" style="display:none;">
+            <img id="img-preview-thumb" src="" alt="Forhåndsvisning">
+            <button class="btn-img-cancel" onclick="cancelImage()" title="Fjern billede">✕</button>
+        </div>
         <div class="input-row input-send-row">
             <input
                 type="text"
                 id="message-input"
                 class="text-input message-input"
-                placeholder="Skriv en besked…"
+                placeholder="Skriv en besked… (eller træk et billede hertil)"
                 maxlength="<?= MAX_MESSAGE_LEN ?>"
                 autocomplete="off">
             <button class="btn-send" onclick="sendMessage()">Send</button>
@@ -130,10 +135,13 @@ qc_add_message($room_id, '__system__', $username . ' er trådt ind i rummet');
 </div><!-- /.chat-container -->
 
 <script>
-const ROOM_ID  = <?= $room_id ?>;
-const USERNAME = <?= json_encode($username) ?>;
-const TOKEN    = <?= json_encode($token) ?>;
-const MAX_U    = <?= MAX_USERS ?>;
+const ROOM_ID      = <?= $room_id ?>;
+const USERNAME     = <?= json_encode($username) ?>;
+const TOKEN        = <?= json_encode($token) ?>;
+const MAX_U        = <?= MAX_USERS ?>;
+const MAX_IMG_BYTES = <?= MAX_IMAGE_SIZE ?>;
+const IMG_TAG_START = '[IMG]';
+const IMG_TAG_END   = '[/IMG]';
 
 let lastId = 0;
 
@@ -152,6 +160,41 @@ function fmtTime(ts) {
     return hh + ':' + mm;
 }
 
+// ── Billede-hjælper ──────────────────────────────────────────────────────────
+
+const IMG_RE = /^\[IMG\](data:image\/(?:jpeg|png|gif|webp);base64,[A-Za-z0-9+/=]+)\[\/IMG\]$/;
+
+function isImageMsg(text) { return IMG_RE.test(text); }
+
+function buildImageEl(dataUrl) {
+    const wrap = document.createElement('span');
+    wrap.className = 'msg-img-wrap';
+
+    const img = document.createElement('img');
+    img.src       = dataUrl;
+    img.className = 'msg-img';
+    img.alt       = 'Billede';
+
+    const btn = document.createElement('button');
+    btn.className   = 'btn-gem';
+    btn.textContent = '💾 Gem';
+    btn.title       = 'Gem billede til din disk';
+    btn.addEventListener('click', () => {
+        const ext = dataUrl.startsWith('data:image/png') ? 'png'
+                  : dataUrl.startsWith('data:image/gif') ? 'gif'
+                  : dataUrl.startsWith('data:image/webp') ? 'webp'
+                  : 'jpg';
+        const a   = document.createElement('a');
+        a.href     = dataUrl;
+        a.download = 'billede.' + ext;
+        a.click();
+    });
+
+    wrap.appendChild(img);
+    wrap.appendChild(btn);
+    return wrap;
+}
+
 // ── Rendering ────────────────────────────────────────────────────────────────
 
 function renderMsg(msg) {
@@ -164,14 +207,28 @@ function renderMsg(msg) {
         const toLabel = msg.recipient ? ' → ' + esc(msg.recipient) : '';
         d.innerHTML =
             '<span class="msg-time">' + fmtTime(msg.ts) + '</span> ' +
-            '<span class="msg-author">' + esc(msg.username) + toLabel + ':</span> ' +
-            '<span class="msg-text">'   + esc(msg.message) + '</span>';
+            '<span class="msg-author">' + esc(msg.username) + toLabel + ':</span> ';
+        if (isImageMsg(msg.message)) {
+            d.appendChild(buildImageEl(msg.message.match(IMG_RE)[1]));
+        } else {
+            const t = document.createElement('span');
+            t.className   = 'msg-text';
+            t.textContent = msg.message;
+            d.appendChild(t);
+        }
     } else {
         d.className = 'msg msg-public';
         d.innerHTML =
             '<span class="msg-time">' + fmtTime(msg.ts) + '</span> ' +
-            '<span class="msg-author">' + esc(msg.username) + ':</span> ' +
-            '<span class="msg-text">'   + esc(msg.message) + '</span>';
+            '<span class="msg-author">' + esc(msg.username) + ':</span> ';
+        if (isImageMsg(msg.message)) {
+            d.appendChild(buildImageEl(msg.message.match(IMG_RE)[1]));
+        } else {
+            const t = document.createElement('span');
+            t.className   = 'msg-text';
+            t.textContent = msg.message;
+            d.appendChild(t);
+        }
     }
     return d;
 }
@@ -233,25 +290,32 @@ function fetchUsers() {
 
 // ── Send besked ──────────────────────────────────────────────────────────────
 
+let pendingImage = null; // base64 data-URL eller null
+
 function sendMessage() {
     const input     = document.getElementById('message-input');
     const recipient = document.getElementById('recipient-select').value;
-    const message   = input.value.trim();
-    if (!message) return;
+    const text      = input.value.trim();
 
-    const fd = new FormData();
-    fd.append('room_id',   ROOM_ID);
-    fd.append('username',  USERNAME);
-    fd.append('message',   message);
-    fd.append('recipient', recipient);
-    fd.append('token',     TOKEN);
+    if (!pendingImage && !text) return;
 
-    input.value = '';
-    updatePrivateStyle();
+    function doSend(msg) {
+        const fd = new FormData();
+        fd.append('room_id',   ROOM_ID);
+        fd.append('username',  USERNAME);
+        fd.append('message',   msg);
+        fd.append('recipient', recipient);
+        fd.append('token',     TOKEN);
+        return fetch('api/send.php', { method: 'POST', body: fd })
+            .then(r => { if (r.ok) fetchMessages(); })
+            .catch(() => {});
+    }
 
-    fetch('api/send.php', { method: 'POST', body: fd })
-        .then(r => { if (r.ok) fetchMessages(); })
-        .catch(() => {});
+    // Send eventuel tekst først, derefter billede
+    const jobs = [];
+    if (text)         { input.value = ''; updatePrivateStyle(); jobs.push(() => doSend(text)); }
+    if (pendingImage) { cancelImage(); jobs.push(() => doSend(IMG_TAG_START + pendingImage + IMG_TAG_END)); }
+    jobs.reduce((p, fn) => p.then(fn), Promise.resolve());
 }
 
 // ── Heartbeat ────────────────────────────────────────────────────────────────
@@ -286,6 +350,58 @@ function updatePrivateStyle() {
         input.placeholder = 'Skriv en besked…';
     }
 }
+
+// ── Billede Drag & Drop ──────────────────────────────────────────────────────
+
+function cancelImage() {
+    pendingImage = null;
+    const area  = document.getElementById('img-preview-area');
+    const thumb = document.getElementById('img-preview-thumb');
+    area.style.display  = 'none';
+    thumb.src           = '';
+}
+
+function handleImageFile(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    if (file.size > MAX_IMG_BYTES) {
+        const maxKb = Math.round(MAX_IMG_BYTES * 0.75 / 1024);
+        alert('Billedet er for stort. Maksimum er ca. ' + maxKb + ' KB.');
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = e => {
+        pendingImage = e.target.result;
+        const thumb = document.getElementById('img-preview-thumb');
+        const area  = document.getElementById('img-preview-area');
+        thumb.src          = pendingImage;
+        area.style.display = 'flex';
+    };
+    reader.readAsDataURL(file);
+}
+
+(function setupDragDrop() {
+    const zone = document.getElementById('chat-input-area');
+    zone.addEventListener('dragover', e => {
+        const hasImage = Array.from(e.dataTransfer.items || []).some(
+            i => i.kind === 'file' && i.type.startsWith('image/')
+        );
+        if (!hasImage) return;
+        e.preventDefault();
+        zone.classList.add('drag-over');
+    });
+    zone.addEventListener('dragleave', e => {
+        if (!zone.contains(e.relatedTarget)) zone.classList.remove('drag-over');
+    });
+    zone.addEventListener('drop', e => {
+        zone.classList.remove('drag-over');
+        const file = Array.from(e.dataTransfer.files || []).find(
+            f => f.type.startsWith('image/')
+        );
+        if (!file) return;
+        e.preventDefault();
+        handleImageFile(file);
+    });
+})();
 
 // ── Events ───────────────────────────────────────────────────────────────────
 

@@ -69,6 +69,9 @@ if (!defined('MAX_USERS')) {
 // ---------------------------------------------------------------------------
 defined('MAX_USERNAME_LEN') || define('MAX_USERNAME_LEN', 30);
 defined('MAX_MESSAGE_LEN')  || define('MAX_MESSAGE_LEN',  1000);
+// Max størrelse for base64-kodede billedbeskeder (ingen disk-lagring, kun APCu-hukommelse).
+// 512 000 bytes base64 ≈ 384 KB rå billeddata (base64 tilføjer ~33% overhead).
+defined('MAX_IMAGE_SIZE')   || define('MAX_IMAGE_SIZE',   512000);
 
 // ---------------------------------------------------------------------------
 // APCu-tjek
