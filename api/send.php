@@ -39,9 +39,11 @@ $is_image = (bool) preg_match(
     $message
 );
 if ($is_image) {
-    if (strlen($message) > MAX_IMAGE_SIZE + 30) { // 30 bytes for [IMG]…[/IMG] tags
+    // Max overhead for [IMG]data:image/<type>;base64,[/IMG]-tags er 40 bytes (konservativt).
+    if (strlen($message) > MAX_IMAGE_SIZE + 40) {
         http_response_code(413);
-        echo json_encode(['error' => 'Billede er for stort (max ~375 KB)']);
+        $kb = (int) round(MAX_IMAGE_SIZE * 0.75 / 1024); // rå KB (base64 ≈ 75% af rå)
+        echo json_encode(['error' => 'Billede er for stort (max ~' . $kb . ' KB)']);
         exit;
     }
 } else {

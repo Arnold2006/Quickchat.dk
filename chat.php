@@ -135,10 +135,13 @@ qc_add_message($room_id, '__system__', $username . ' er trådt ind i rummet');
 </div><!-- /.chat-container -->
 
 <script>
-const ROOM_ID  = <?= $room_id ?>;
-const USERNAME = <?= json_encode($username) ?>;
-const TOKEN    = <?= json_encode($token) ?>;
-const MAX_U    = <?= MAX_USERS ?>;
+const ROOM_ID      = <?= $room_id ?>;
+const USERNAME     = <?= json_encode($username) ?>;
+const TOKEN        = <?= json_encode($token) ?>;
+const MAX_U        = <?= MAX_USERS ?>;
+const MAX_IMG_BYTES = <?= MAX_IMAGE_SIZE ?>;
+const IMG_TAG_START = '[IMG]';
+const IMG_TAG_END   = '[/IMG]';
 
 let lastId = 0;
 
@@ -311,7 +314,7 @@ function sendMessage() {
     // Send eventuel tekst først, derefter billede
     const jobs = [];
     if (text)         { input.value = ''; updatePrivateStyle(); jobs.push(() => doSend(text)); }
-    if (pendingImage) { cancelImage(); jobs.push(() => doSend('[IMG]' + pendingImage + '[/IMG]')); }
+    if (pendingImage) { cancelImage(); jobs.push(() => doSend(IMG_TAG_START + pendingImage + IMG_TAG_END)); }
     jobs.reduce((p, fn) => p.then(fn), Promise.resolve());
 }
 
@@ -350,8 +353,6 @@ function updatePrivateStyle() {
 
 // ── Billede Drag & Drop ──────────────────────────────────────────────────────
 
-const MAX_IMG_BYTES = <?= MAX_IMAGE_SIZE ?>;
-
 function cancelImage() {
     pendingImage = null;
     const area  = document.getElementById('img-preview-area');
@@ -363,7 +364,8 @@ function cancelImage() {
 function handleImageFile(file) {
     if (!file || !file.type.startsWith('image/')) return;
     if (file.size > MAX_IMG_BYTES) {
-        alert('Billedet er for stort. Maksimum er ca. 375 KB.');
+        const maxKb = Math.round(MAX_IMG_BYTES * 0.75 / 1024);
+        alert('Billedet er for stort. Maksimum er ca. ' + maxKb + ' KB.');
         return;
     }
     const reader = new FileReader();
