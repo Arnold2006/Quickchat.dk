@@ -156,9 +156,52 @@ if (!$loginNeeded) {
             <input type="hidden" name="action" value="create_category">
             <input type="text"  name="cat_name" class="text-input" placeholder="Navn…"        maxlength="100" required>
             <input type="text"  name="cat_desc" class="text-input" placeholder="Beskrivelse…" maxlength="255">
-            <input type="text"  name="cat_icon" class="text-input" placeholder="Ikon"         maxlength="10" value="💬" style="width:70px;">
+            <input type="hidden" name="cat_icon" id="cat_icon_value" value="💬">
+            <button type="button" class="icon-picker-btn" id="openIconPicker"
+                    aria-haspopup="dialog" aria-controls="iconPickerModal">
+                <span class="picker-preview" id="iconPickerPreview">💬</span>
+                <span class="picker-label">Vælg ikon ▾</span>
+            </button>
             <button type="submit" class="btn-primary">Opret kategori</button>
         </form>
+
+        <!-- Icon picker modal -->
+        <div class="icon-modal-overlay" id="iconPickerModal" role="dialog" aria-modal="true" aria-label="Vælg ikon">
+            <div class="icon-modal">
+                <div class="icon-modal-header">
+                    <h3>Vælg et ikon</h3>
+                    <button class="icon-modal-close" id="closeIconPicker" aria-label="Luk">✕</button>
+                </div>
+
+                <p class="icon-group-label">Generel chat</p>
+                <div class="icon-grid">
+                    <?php foreach (['💬','🗨️','💭','🗣️','👥','🌐','🏠','📣','🔊','🤝','🙋','📢'] as $ic): ?>
+                    <button type="button" class="icon-option" data-icon="<?= htmlspecialchars($ic, ENT_QUOTES) ?>"><?= $ic ?></button>
+                    <?php endforeach; ?>
+                </div>
+
+                <p class="icon-group-label">Kontakt &amp; Dating</p>
+                <div class="icon-grid">
+                    <?php foreach (['❤️','💕','💝','💖','💌','🌹','😍','🥰','😘','💑','👫','🫶','💏','🕊️'] as $ic): ?>
+                    <button type="button" class="icon-option" data-icon="<?= htmlspecialchars($ic, ENT_QUOTES) ?>"><?= $ic ?></button>
+                    <?php endforeach; ?>
+                </div>
+
+                <p class="icon-group-label">Voksenchat / Sex chat</p>
+                <div class="icon-grid">
+                    <?php foreach (['💋','❤️‍🔥','🌶️','😈','👄','🫦','🌙','🍒','🎭','💃'] as $ic): ?>
+                    <button type="button" class="icon-option" data-icon="<?= htmlspecialchars($ic, ENT_QUOTES) ?>"><?= $ic ?></button>
+                    <?php endforeach; ?>
+                </div>
+
+                <p class="icon-group-label">Aldersbestemt / Begrænset adgang</p>
+                <div class="icon-grid">
+                    <?php foreach (['🔞','⚠️','🚫','🔐','🔒','18️⃣','🎰','🃏','🍺','🎲','🛑','🔑'] as $ic): ?>
+                    <button type="button" class="icon-option" data-icon="<?= htmlspecialchars($ic, ENT_QUOTES) ?>"><?= $ic ?></button>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
 
         <table class="admin-table">
             <thead>
@@ -240,5 +283,49 @@ if (!$loginNeeded) {
 </div><!-- /.admin-container -->
 
 <?php endif; ?>
+<script>
+(function () {
+    var overlay  = document.getElementById('iconPickerModal');
+    if (!overlay) return;
+    var preview  = document.getElementById('iconPickerPreview');
+    var hidden   = document.getElementById('cat_icon_value');
+    var openBtn  = document.getElementById('openIconPicker');
+    var closeBtn = document.getElementById('closeIconPicker');
+
+    function openModal() {
+        overlay.classList.add('open');
+        // Mark the currently selected icon
+        overlay.querySelectorAll('.icon-option').forEach(function (btn) {
+            btn.classList.toggle('active', btn.dataset.icon === hidden.value);
+        });
+        var first = overlay.querySelector('.icon-option.active') || overlay.querySelector('.icon-option');
+        if (first) first.focus();
+    }
+
+    function closeModal() {
+        overlay.classList.remove('open');
+        openBtn.focus();
+    }
+
+    openBtn.addEventListener('click', openModal);
+    closeBtn.addEventListener('click', closeModal);
+
+    overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) closeModal();
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && overlay.classList.contains('open')) closeModal();
+    });
+
+    overlay.querySelectorAll('.icon-option').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            hidden.value  = btn.dataset.icon;
+            preview.textContent = btn.dataset.icon;
+            closeModal();
+        });
+    });
+}());
+</script>
 </body>
 </html>

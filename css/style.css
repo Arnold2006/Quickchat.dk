@@ -390,6 +390,98 @@ body {
 .admin-table tr:hover td { background: rgba(255,255,255,.02); }
 .td-empty              { text-align: center; color: var(--text-muted); padding: 1rem !important; }
 
+/* ── Icon Picker ─────────────────────────────────────────────── */
+.icon-picker-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    padding: .55rem .9rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-size: .93rem;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.icon-picker-btn:hover { border-color: var(--accent); background: var(--surface); }
+.icon-picker-btn .picker-preview { font-size: 1.3rem; line-height: 1; }
+.icon-picker-btn .picker-label   { font-size: .78rem; color: var(--text-muted); }
+
+.icon-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.6);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+.icon-modal-overlay.open { display: flex; }
+
+.icon-modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    width: min(480px, 94vw);
+    max-height: 80vh;
+    overflow-y: auto;
+}
+.icon-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.1rem;
+}
+.icon-modal-header h3 { font-size: 1rem; }
+.icon-modal-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.4rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 .2rem;
+    transition: color .15s;
+}
+.icon-modal-close:hover { color: var(--text); }
+
+.icon-group-label {
+    font-size: .7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--text-muted);
+    margin: 1rem 0 .5rem;
+}
+.icon-group-label:first-of-type { margin-top: 0; }
+
+.icon-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+    margin-bottom: .25rem;
+}
+.icon-option {
+    background: var(--surface2);
+    border: 2px solid transparent;
+    border-radius: var(--radius-sm);
+    font-size: 1.6rem;
+    width: 2.8rem;
+    height: 2.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: border-color .12s, background .12s;
+    line-height: 1;
+}
+.icon-option:hover  { border-color: var(--accent); background: var(--surface); }
+.icon-option.active { border-color: var(--accent); background: rgba(59,130,246,.15); }
+
 /* ── Footer ─────────────────────────────────────────────────── */
 .site-footer {
     text-align: center;
