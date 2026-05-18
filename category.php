@@ -57,7 +57,7 @@ unset($room);
                 </div>
                 <button
                     class="btn-enter"
-                    onclick="openModal(<?= (int)$room['id'] ?>, <?= json_encode($room['name']) ?>)">
+                    onclick="openModal(<?= (int)$room['id'] ?>, <?= htmlspecialchars(json_encode($room['name']), ENT_QUOTES) ?>)">
                     Gå ind →
                 </button>
             </div>
