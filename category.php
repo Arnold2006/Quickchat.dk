@@ -128,6 +128,7 @@ function joinRoom() {
     const url = 'chat.php?room_id=' + activeRoomId
               + '&username=' + encodeURIComponent(username);
 
+    closeModal();
     window.location.href = url;
 }
 
