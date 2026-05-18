@@ -42,6 +42,9 @@ if (apcu_ok()) {
     </header>
 
     <main class="lobby">
+        <?php if (FRONT_PAGE_TEXT !== ''): ?>
+        <div class="front-page-text"><?= nl2br(htmlspecialchars(FRONT_PAGE_TEXT)) ?></div>
+        <?php endif; ?>
         <p class="section-label">Vælg en kategori</p>
         <div class="category-grid">
             <?php foreach ($categories as $cat): ?>

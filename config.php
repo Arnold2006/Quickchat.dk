@@ -60,6 +60,7 @@ if (!defined('MAX_USERS')) {
     define('MAX_MESSAGES', (int)($cfg['max_messages'] ?? 30));
     define('USER_TIMEOUT', (int)($cfg['user_timeout'] ?? 90));
     define('SITE_NAME',         ($cfg['site_name']    ?? 'QuickChat.dk'));
+    define('FRONT_PAGE_TEXT',   ($cfg['front_page_text'] ?? ''));
     unset($cfg);
 }
 
