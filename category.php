@@ -128,16 +128,7 @@ function joinRoom() {
     const url = 'chat.php?room_id=' + activeRoomId
               + '&username=' + encodeURIComponent(username);
 
-    const win = window.open(
-        url, '_blank',
-        'width=1100,height=720,resizable=yes,scrollbars=yes,noopener,noreferrer'
-    );
-    if (!win) {
-        errorEl.textContent   = 'Pop-up blokeret! Tillad pop-up for denne side og prøv igen.';
-        errorEl.style.display = 'block';
-        return;
-    }
-    closeModal();
+    window.location.href = url;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
