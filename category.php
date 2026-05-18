@@ -57,7 +57,8 @@ unset($room);
                 </div>
                 <button
                     class="btn-enter"
-                    onclick="openModal(<?= (int)$room['id'] ?>, <?= json_encode($room['name']) ?>)">
+                    data-room-id="<?= (int)$room['id'] ?>"
+                    data-room-name="<?= htmlspecialchars($room['name'], ENT_QUOTES) ?>">
                     Gå ind →
                 </button>
             </div>
@@ -136,6 +137,15 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('username-input').addEventListener('keydown', e => {
         if (e.key === 'Enter')  joinRoom();
         if (e.key === 'Escape') closeModal();
+    });
+
+    document.querySelectorAll('.btn-enter').forEach(btn => {
+        btn.addEventListener('click', () => {
+            openModal(
+                parseInt(btn.dataset.roomId,  10),
+                btn.dataset.roomName
+            );
+        });
     });
 });
 
