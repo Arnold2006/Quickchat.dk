@@ -1,6 +1,5 @@
 <?php
 require_once __DIR__ . '/../config.php';
-session_write_close();
 header('Content-Type: application/json; charset=utf-8');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -13,30 +12,35 @@ $room_id   = isset($_POST['room_id'])   ? (int)$_POST['room_id']       : 0;
 $username  = isset($_POST['username'])  ? trim($_POST['username'])      : '';
 $message   = isset($_POST['message'])   ? trim($_POST['message'])       : '';
 $recipient = isset($_POST['recipient']) ? trim($_POST['recipient'])     : '';
+$token     = isset($_POST['token'])     ? trim($_POST['token'])         : '';
 
-if (!$room_id || !$username || !$message) {
+if (!$room_id || !$username || !$message || !$token || !apcu_ok()) {
     http_response_code(400);
-    echo json_encode(['error' => 'Missing required fields']);
+    echo json_encode(['error' => 'Manglende felter']);
     exit;
 }
 
-// Sanitize lengths
-$username  = mb_substr($username,  0, 50);
+// Validér token – brugeren skal være aktiv med dette token
+$users = qc_get_users_raw($room_id);
+$key   = qc_find_user($users, $username);
+if ($key === null || $users[$key]['token'] !== $token) {
+    http_response_code(403);
+    echo json_encode(['error' => 'Uautoriseret']);
+    exit;
+}
+
+$username  = mb_substr($username,  0, 30);
 $message   = mb_substr($message,   0, 1000);
-$recipient = mb_substr($recipient, 0, 50);
+$recipient = mb_substr($recipient, 0, 30);
 
 $is_private = ($recipient !== '') ? 1 : 0;
 
-$stmt = db()->prepare("
-    INSERT INTO messages (room_id, username, message, is_private, recipient)
-    VALUES (:room_id, :username, :message, :is_private, :recipient)
-");
-$stmt->execute([
-    ':room_id'    => $room_id,
-    ':username'   => $username,
-    ':message'    => $message,
-    ':is_private' => $is_private,
-    ':recipient'  => $is_private ? $recipient : null,
-]);
+$id = qc_add_message(
+    $room_id,
+    $username,
+    $message,
+    $is_private,
+    $is_private ? $recipient : null
+);
 
-echo json_encode(['success' => true, 'id' => (int)db()->lastInsertId()]);
+echo json_encode(['ok' => true, 'id' => $id]);

@@ -1,25 +1,15 @@
 <?php
 require_once __DIR__ . '/../config.php';
-session_write_close();
 header('Content-Type: application/json; charset=utf-8');
 
 $room_id  = isset($_GET['room_id'])  ? (int)$_GET['room_id']   : 0;
 $username = isset($_GET['username']) ? trim($_GET['username'])  : '';
+$token    = isset($_GET['token'])    ? trim($_GET['token'])     : '';
 
-if (!$room_id || !$username) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Missing parameters']);
+if (!$room_id || !$username || !$token || !apcu_ok()) {
+    echo json_encode(['ok' => false]);
     exit;
 }
 
-$session_id = session_id();
-
-$stmt = db()->prepare("
-    UPDATE room_users
-    SET last_seen = NOW()
-    WHERE room_id = :room_id
-      AND session_id = :session_id
-");
-$stmt->execute([':room_id' => $room_id, ':session_id' => $session_id]);
-
-echo json_encode(['success' => true]);
+qc_touch_user($room_id, $username, $token);
+echo json_encode(['ok' => true]);
