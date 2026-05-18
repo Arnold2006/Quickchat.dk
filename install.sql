@@ -42,10 +42,10 @@ CREATE TABLE IF NOT EXISTS site_config (
 -- Standardkonfiguration
 -- ---------------------------------------------------------------
 INSERT INTO site_config (`key`, `value`) VALUES
-    ('site_name',       'QuickChat.dk'),
-    ('max_users',       '20'),
-    ('max_messages',    '30'),
-    ('user_timeout',    '90'),
+    ('site_name',    'QuickChat.dk'),
+    ('max_users',    '20'),
+    ('max_messages', '30'),
+    ('user_timeout', '90'),
     ('front_page_text', '')
 ON DUPLICATE KEY UPDATE `value` = VALUES(`value`);
 
