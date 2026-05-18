@@ -29,9 +29,9 @@ if ($key === null || $users[$key]['token'] !== $token) {
     exit;
 }
 
-$username  = mb_substr($username,  0, 30);
-$message   = mb_substr($message,   0, 1000);
-$recipient = mb_substr($recipient, 0, 30);
+$username  = mb_substr($username,  0, MAX_USERNAME_LEN);
+$message   = mb_substr($message,   0, MAX_MESSAGE_LEN);
+$recipient = mb_substr($recipient, 0, MAX_USERNAME_LEN);
 
 $is_private = ($recipient !== '') ? 1 : 0;
 

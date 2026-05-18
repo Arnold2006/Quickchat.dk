@@ -57,7 +57,7 @@ unset($room);
                 </div>
                 <button
                     class="btn-enter"
-                    onclick="openModal(<?= (int)$room['id'] ?>, <?= htmlspecialchars(json_encode($room['name']), ENT_QUOTES) ?>)">
+                    onclick="openModal(<?= (int)$room['id'] ?>, <?= json_encode($room['name']) ?>)">
                     Gå ind →
                 </button>
             </div>
@@ -80,7 +80,7 @@ unset($room);
             id="username-input"
             class="text-input"
             placeholder="Dit brugernavn…"
-            maxlength="30"
+            maxlength="<?= MAX_USERNAME_LEN ?>"
             autocomplete="off">
         <div id="username-error" class="error-msg" style="display:none;"></div>
         <div class="modal-buttons">
@@ -119,8 +119,8 @@ function joinRoom() {
         errorEl.style.display = 'block';
         return;
     }
-    if (username.length > 30) {
-        errorEl.textContent   = 'Brugernavnet må maks. være 30 tegn.';
+    if (username.length > <?= MAX_USERNAME_LEN ?>) {
+        errorEl.textContent   = 'Brugernavnet må maks. være <?= MAX_USERNAME_LEN ?> tegn.';
         errorEl.style.display = 'block';
         return;
     }

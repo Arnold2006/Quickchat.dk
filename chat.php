@@ -5,7 +5,7 @@ $room_id  = isset($_GET['room_id'])  ? (int)$_GET['room_id']    : 0;
 $username = isset($_GET['username']) ? trim($_GET['username'])   : '';
 
 // Grundlæggende validering
-if (!$room_id || mb_strlen($username) < 2 || mb_strlen($username) > 30) {
+if (!$room_id || mb_strlen($username) < 2 || mb_strlen($username) > MAX_USERNAME_LEN) {
     header('Location: index.php');
     exit;
 }
@@ -121,7 +121,7 @@ qc_add_message($room_id, '__system__', $username . ' er trådt ind i rummet');
                 id="message-input"
                 class="text-input message-input"
                 placeholder="Skriv en besked…"
-                maxlength="1000"
+                maxlength="<?= MAX_MESSAGE_LEN ?>"
                 autocomplete="off">
             <button class="btn-send" onclick="sendMessage()">Send</button>
         </div>
