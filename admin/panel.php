@@ -53,10 +53,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $name   = trim($_POST['room_name'] ?? '');
                 $cat_id = (int)($_POST['cat_id'] ?? 0);
                 if ($name !== '' && $cat_id && mb_strlen($name) <= 100) {
+                    db()->beginTransaction();
+                    $maxOrd = db()->prepare("SELECT COALESCE(MAX(sort_order), 0) FROM rooms WHERE category_id = :c FOR UPDATE");
+                    $maxOrd->execute([':c' => $cat_id]);
+                    $nextOrd = (int)$maxOrd->fetchColumn() + 1;
                     $s = db()->prepare(
-                        "INSERT INTO rooms (category_id, name) VALUES (:c,:n)"
+                        "INSERT INTO rooms (category_id, name, sort_order) VALUES (:c,:n,:o)"
                     );
-                    $s->execute([':c' => $cat_id, ':n' => $name]);
+                    $s->execute([':c' => $cat_id, ':n' => $name, ':o' => $nextOrd]);
+                    db()->commit();
                     $msg = 'Rum "' . htmlspecialchars($name) . '" oprettet.';
                 } else {
                     $msg = 'Ugyldigt rumnavn eller manglende kategori.';
