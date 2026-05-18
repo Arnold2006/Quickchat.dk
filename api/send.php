@@ -30,8 +30,23 @@ if ($key === null || $users[$key]['token'] !== $token) {
 }
 
 $username  = mb_substr($username,  0, MAX_USERNAME_LEN);
-$message   = mb_substr($message,   0, MAX_MESSAGE_LEN);
 $recipient = mb_substr($recipient, 0, MAX_USERNAME_LEN);
+
+// Billedbeskeder indeholder base64-data og må ikke trunkeres med MAX_MESSAGE_LEN.
+// Format: [IMG]data:image/<type>;base64,<data>[/IMG]
+$is_image = (bool) preg_match(
+    '/^\[IMG\]data:image\/(jpeg|png|gif|webp);base64,[A-Za-z0-9+\/=]+\[\/IMG\]$/',
+    $message
+);
+if ($is_image) {
+    if (strlen($message) > MAX_IMAGE_SIZE + 30) { // 30 bytes for [IMG]…[/IMG] tags
+        http_response_code(413);
+        echo json_encode(['error' => 'Billede er for stort (max ~375 KB)']);
+        exit;
+    }
+} else {
+    $message = mb_substr($message, 0, MAX_MESSAGE_LEN);
+}
 
 $is_private = ($recipient !== '') ? 1 : 0;
 
