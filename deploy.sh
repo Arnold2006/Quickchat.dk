@@ -67,6 +67,17 @@ if [[ -f "config-local.php" ]]; then
     info "Rettigheder på config-local.php sat til 640 (root:${WEB_USER})"
 fi
 
+# Giv webserveren skriveadgang til migrations-mappen, så upgrade.php kan slette
+# migreringsfiler efter de er anvendt.
+if [[ -d "database/migrations" ]]; then
+    chown -R "${WEB_USER}:${WEB_USER}" database/migrations
+    chmod -R 750 database/migrations
+    info "Rettigheder på database/migrations sat (${WEB_USER}:${WEB_USER}, 755)"
+fi
+
+echo "==> Kører database-migreringer..."
+php upgrade.php
+
 echo ""
 echo "==> Deployment fuldført."
 echo "    Webserver-bruger : ${WEB_USER}"
