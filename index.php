@@ -65,6 +65,7 @@ if (apcu_ok()) {
 
     <footer class="site-footer">
         <p>100 % anonymt &nbsp;·&nbsp; ingen registrering &nbsp;·&nbsp; ingen logning</p>
+        <p><a class="footer-link" href="contact.php">✉️ Skriv til Admin</a></p>
     </footer>
 </div>
 </body>

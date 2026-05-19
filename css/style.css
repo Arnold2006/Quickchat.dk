@@ -642,6 +642,115 @@ body {
     font-size: .78rem;
     border-top: 1px solid var(--border);
 }
+.footer-link {
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color .15s;
+}
+.footer-link:hover { color: var(--accent); }
+
+/* ── Contact form ───────────────────────────────────────────── */
+.contact-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.75rem 2rem;
+    max-width: 600px;
+}
+.contact-intro {
+    font-size: .9rem;
+    color: var(--text-muted);
+    margin-bottom: 1.25rem;
+}
+.contact-form {
+    display: flex;
+    flex-direction: column;
+    gap: .65rem;
+}
+.contact-form label {
+    font-size: .85rem;
+    font-weight: 600;
+}
+.contact-form .text-input { width: 100%; }
+.contact-form textarea.contact-textarea { resize: vertical; }
+.contact-form .btn-primary { align-self: flex-start; }
+
+.field-optional { font-weight: 400; color: var(--text-muted); }
+.field-required  { color: var(--red); }
+
+.contact-success {
+    background: rgba(34,197,94,.1);
+    border: 1px solid var(--green);
+    color: #1a7a4a;
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
+    max-width: 600px;
+    font-size: .95rem;
+}
+
+.contact-error {
+    display: block;
+    margin-bottom: 1rem;
+}
+
+/* ── Admin – notification badge ─────────────────────────────── */
+.admin-notif-badge {
+    display: inline-block;
+    background: var(--red);
+    color: #fff;
+    font-size: .65rem;
+    font-weight: 700;
+    line-height: 1;
+    padding: .25em .55em;
+    border-radius: 99px;
+    vertical-align: middle;
+    margin-left: .4rem;
+}
+
+/* ── Admin – section header row ─────────────────────────────── */
+.admin-section-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+.admin-section-header h2 { margin-bottom: 0; }
+
+/* ── Admin – contact messages table ─────────────────────────── */
+.contact-msg-table .msg-date  { white-space: nowrap; width: 9rem; }
+.contact-msg-table .msg-body  { max-width: 28rem; word-break: break-word; }
+.contact-msg-table .msg-actions { white-space: nowrap; }
+
+.msg-unread td               { font-weight: 600; }
+.msg-unread .msg-body        { background: rgba(76,159,192,.07); }
+
+.badge-unread {
+    display: inline-block;
+    background: var(--red);
+    color: #fff;
+    font-size: .68rem;
+    font-weight: 700;
+    padding: .18em .55em;
+    border-radius: 99px;
+}
+.badge-read {
+    display: inline-block;
+    background: var(--surface2);
+    color: var(--text-muted);
+    font-size: .68rem;
+    font-weight: 600;
+    padding: .18em .55em;
+    border-radius: 99px;
+}
+
+.btn-sm {
+    font-size: .78rem !important;
+    padding: .3rem .65rem !important;
+}
+
+.text-muted { color: var(--text-muted); font-style: normal; }
+.contact-empty-state { padding: .75rem 0; }
 
 /* ── Scrollbar ──────────────────────────────────────────────── */
 ::-webkit-scrollbar        { width: 5px; }

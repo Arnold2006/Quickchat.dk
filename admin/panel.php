@@ -151,6 +151,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $msg = 'Forsidetekst gemt.';
                 break;
 
+            case 'mark_read':
+                $id = (int)($_POST['msg_id'] ?? 0);
+                if ($id) {
+                    db()->prepare("UPDATE contact_messages SET is_read = 1 WHERE id = :id")
+                        ->execute([':id' => $id]);
+                    $msg = 'Besked markeret som læst.';
+                }
+                break;
+
+            case 'mark_all_read':
+                db()->exec("UPDATE contact_messages SET is_read = 1 WHERE is_read = 0");
+                $msg = 'Alle beskeder markeret som læst.';
+                break;
+
+            case 'delete_contact_msg':
+                $id = (int)($_POST['msg_id'] ?? 0);
+                if ($id) {
+                    db()->prepare("DELETE FROM contact_messages WHERE id = :id")
+                        ->execute([':id' => $id]);
+                    $msg = 'Besked slettet.';
+                }
+                break;
+
             case 'logout':
                 $_SESSION['admin_auth'] = false;
                 $loginNeeded = true;
@@ -163,6 +186,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 $categories   = [];
 $rooms_by_cat = [];
 $front_page_text = '';
+$contact_messages = [];
+$unread_count = 0;
 if (!$loginNeeded) {
     $categories = db()->query(
         "SELECT * FROM categories ORDER BY sort_order, name"
@@ -181,6 +206,14 @@ if (!$loginNeeded) {
 
     $row = db()->query("SELECT `value` FROM site_config WHERE `key` = 'front_page_text'")->fetch();
     $front_page_text = $row ? $row['value'] : '';
+
+    $contact_messages = db()->query(
+        "SELECT * FROM contact_messages ORDER BY created_at DESC"
+    )->fetchAll();
+
+    $unread_count = (int)db()->query(
+        "SELECT COUNT(*) FROM contact_messages WHERE is_read = 0"
+    )->fetchColumn();
 }
 ?>
 <!DOCTYPE html>
@@ -221,7 +254,11 @@ if (!$loginNeeded) {
 
 <div class="admin-container">
     <header class="admin-header">
-        <h1>⚙️ Admin – <?= htmlspecialchars(SITE_NAME) ?></h1>
+        <h1>⚙️ Admin – <?= htmlspecialchars(SITE_NAME) ?>
+            <?php if ($unread_count > 0): ?>
+                <span class="admin-notif-badge"><?= $unread_count ?></span>
+            <?php endif; ?>
+        </h1>
         <form method="POST" action="?token=<?= htmlspecialchars($token, ENT_QUOTES) ?>" style="display:inline;">
             <input type="hidden" name="action" value="logout">
             <button type="submit" class="btn-secondary">Log ud</button>
@@ -416,6 +453,65 @@ if (!$loginNeeded) {
             </tbody>
         </table>
         <?php endforeach; ?>
+    </section>
+
+    <!-- ── Beskeder fra brugere ─────────────────────────────────── -->
+    <section class="admin-section">
+        <div class="admin-section-header">
+            <h2>
+                ✉️ Beskeder fra brugere
+                <?php if ($unread_count > 0): ?>
+                    <span class="admin-notif-badge"><?= $unread_count ?> ulæst<?= $unread_count !== 1 ? 'e' : '' ?></span>
+                <?php endif; ?>
+            </h2>
+            <?php if ($unread_count > 0): ?>
+            <form method="POST" action="?token=<?= htmlspecialchars($token, ENT_QUOTES) ?>" style="display:inline;">
+                <input type="hidden" name="action" value="mark_all_read">
+                <button type="submit" class="btn-secondary btn-sm">Markér alle som læst</button>
+            </form>
+            <?php endif; ?>
+        </div>
+
+        <?php if (empty($contact_messages)): ?>
+            <p class="td-empty contact-empty-state">Ingen beskeder endnu.</p>
+        <?php else: ?>
+        <table class="admin-table contact-msg-table">
+            <thead>
+                <tr><th>Dato</th><th>Navn</th><th>Besked</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody>
+            <?php foreach ($contact_messages as $cm): ?>
+                <tr class="<?= $cm['is_read'] ? 'msg-read' : 'msg-unread' ?>">
+                    <td class="msg-date"><?= htmlspecialchars(date('d.m.Y H:i', strtotime($cm['created_at']))) ?></td>
+                    <td><?php if ($cm['name'] !== ''): ?><?= htmlspecialchars($cm['name']) ?><?php else: ?><em class="text-muted">Anonym</em><?php endif; ?></td>
+                    <td class="msg-body"><?= nl2br(htmlspecialchars($cm['message'])) ?></td>
+                    <td>
+                        <?php if ($cm['is_read']): ?>
+                            <span class="badge-read">Læst</span>
+                        <?php else: ?>
+                            <span class="badge-unread">Ny</span>
+                        <?php endif; ?>
+                    </td>
+                    <td class="msg-actions">
+                        <?php if (!$cm['is_read']): ?>
+                        <form method="POST" action="?token=<?= htmlspecialchars($token, ENT_QUOTES) ?>" style="display:inline;">
+                            <input type="hidden" name="action" value="mark_read">
+                            <input type="hidden" name="msg_id" value="<?= (int)$cm['id'] ?>">
+                            <button type="submit" class="btn-secondary btn-sm">Markér læst</button>
+                        </form>
+                        <?php endif; ?>
+                        <form method="POST" action="?token=<?= htmlspecialchars($token, ENT_QUOTES) ?>"
+                              onsubmit="return confirm('Slet denne besked?')" style="display:inline;">
+                            <input type="hidden" name="action" value="delete_contact_msg">
+                            <input type="hidden" name="msg_id" value="<?= (int)$cm['id'] ?>">
+                            <button type="submit" class="btn-danger btn-sm">Slet</button>
+                        </form>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+        <?php endif; ?>
     </section>
 
 </div><!-- /.admin-container -->
