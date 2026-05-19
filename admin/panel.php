@@ -174,6 +174,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 }
                 break;
 
+            case 'create_nav_item':
+                $label = trim($_POST['nav_label'] ?? '');
+                $url   = trim($_POST['nav_url']   ?? '');
+                if ($label !== '' && $url !== '' && mb_strlen($label) <= 100 && mb_strlen($url) <= 500) {
+                    $maxOrd = (int)db()->query("SELECT COALESCE(MAX(sort_order), 0) FROM nav_items")->fetchColumn();
+                    db()->prepare(
+                        "INSERT INTO nav_items (label, url, sort_order) VALUES (:l, :u, :o)"
+                    )->execute([':l' => $label, ':u' => $url, ':o' => $maxOrd + 1]);
+                    $msg = 'Menupunkt "' . htmlspecialchars($label) . '" oprettet.';
+                } else {
+                    $msg = 'Ugyldigt menupunkt – tjek navn og URL.';
+                }
+                break;
+
+            case 'delete_nav_item':
+                $id = (int)($_POST['nav_id'] ?? 0);
+                if ($id) {
+                    db()->prepare("DELETE FROM nav_items WHERE id = :id")->execute([':id' => $id]);
+                    $msg = 'Menupunkt slettet.';
+                }
+                break;
+
+            case 'move_nav_item':
+                $id  = (int)($_POST['nav_id']    ?? 0);
+                $dir = ($_POST['direction'] ?? '') === 'up' ? 'up' : 'down';
+                if ($id) {
+                    $row = db()->prepare("SELECT sort_order FROM nav_items WHERE id = :id");
+                    $row->execute([':id' => $id]);
+                    $cur = $row->fetchColumn();
+                    if ($cur !== false) {
+                        $cur = (int)$cur;
+                        if ($dir === 'up') {
+                            $nb = db()->prepare(
+                                "SELECT id, sort_order FROM nav_items WHERE sort_order < :s ORDER BY sort_order DESC LIMIT 1"
+                            );
+                        } else {
+                            $nb = db()->prepare(
+                                "SELECT id, sort_order FROM nav_items WHERE sort_order > :s ORDER BY sort_order ASC LIMIT 1"
+                            );
+                        }
+                        $nb->execute([':s' => $cur]);
+                        $nbRow = $nb->fetch();
+                        if ($nbRow) {
+                            db()->beginTransaction();
+                            db()->prepare("UPDATE nav_items SET sort_order = :s WHERE id = :id")
+                                ->execute([':s' => $nbRow['sort_order'], ':id' => $id]);
+                            db()->prepare("UPDATE nav_items SET sort_order = :s WHERE id = :id")
+                                ->execute([':s' => $cur, ':id' => $nbRow['id']]);
+                            db()->commit();
+                        }
+                    }
+                }
+                break;
+
             case 'logout':
                 $_SESSION['admin_auth'] = false;
                 $loginNeeded = true;
@@ -188,6 +242,7 @@ $rooms_by_cat = [];
 $front_page_text = '';
 $contact_messages = [];
 $unread_count = 0;
+$nav_items    = [];
 if (!$loginNeeded) {
     $categories = db()->query(
         "SELECT * FROM categories ORDER BY sort_order, name"
@@ -214,6 +269,8 @@ if (!$loginNeeded) {
     $unread_count = (int)db()->query(
         "SELECT COUNT(*) FROM contact_messages WHERE is_read = 0"
     )->fetchColumn();
+
+    $nav_items = qc_nav_items();
 }
 ?>
 <!DOCTYPE html>
@@ -283,6 +340,64 @@ if (!$loginNeeded) {
                       style="resize:vertical;"><?= htmlspecialchars($front_page_text) ?></textarea>
             <button type="submit" class="btn-primary" style="align-self:flex-start;margin-top:.5rem;">Gem tekst</button>
         </form>
+    </section>
+
+    <!-- ── Navigationsmenu ───────────────────────────────────────── -->
+    <section class="admin-section">
+        <h2>Navigationsmenu</h2>
+        <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:.75rem;">
+            Disse links vises i menubjælken over velkomstteksten på alle sider.
+        </p>
+
+        <form method="POST" action="?token=<?= htmlspecialchars($token, ENT_QUOTES) ?>" class="admin-form">
+            <input type="hidden" name="action" value="create_nav_item">
+            <input type="text" name="nav_label" class="text-input" placeholder="Titel (fx ✉️ Skriv til Admin)" maxlength="100" required>
+            <input type="text" name="nav_url"   class="text-input" placeholder="URL (fx contact.php)"          maxlength="500" required>
+            <button type="submit" class="btn-primary">Tilføj menupunkt</button>
+        </form>
+
+        <table class="admin-table">
+            <thead>
+                <tr><th>ID</th><th>Titel</th><th>URL</th><th>Rækkefølge</th><th></th></tr>
+            </thead>
+            <tbody>
+            <?php if (empty($nav_items)): ?>
+                <tr><td colspan="5" class="td-empty">Ingen menupunkter endnu.</td></tr>
+            <?php else: foreach ($nav_items as $ni => $item): ?>
+                <tr>
+                    <td><?= (int)$item['id'] ?></td>
+                    <td><?= htmlspecialchars($item['label']) ?></td>
+                    <td><a href="../<?= htmlspecialchars($item['url'], ENT_QUOTES) ?>" target="_blank" style="color:var(--accent);"><?= htmlspecialchars($item['url']) ?></a></td>
+                    <td class="sort-btns">
+                        <?php if ($ni > 0): ?>
+                        <form method="POST" action="?token=<?= htmlspecialchars($token, ENT_QUOTES) ?>" style="display:inline;">
+                            <input type="hidden" name="action"    value="move_nav_item">
+                            <input type="hidden" name="nav_id"    value="<?= (int)$item['id'] ?>">
+                            <input type="hidden" name="direction" value="up">
+                            <button type="submit" class="btn-move" title="Flyt op">▲</button>
+                        </form>
+                        <?php endif; ?>
+                        <?php if ($ni < count($nav_items) - 1): ?>
+                        <form method="POST" action="?token=<?= htmlspecialchars($token, ENT_QUOTES) ?>" style="display:inline;">
+                            <input type="hidden" name="action"    value="move_nav_item">
+                            <input type="hidden" name="nav_id"    value="<?= (int)$item['id'] ?>">
+                            <input type="hidden" name="direction" value="down">
+                            <button type="submit" class="btn-move" title="Flyt ned">▼</button>
+                        </form>
+                        <?php endif; ?>
+                    </td>
+                    <td>
+                        <form method="POST" action="?token=<?= htmlspecialchars($token, ENT_QUOTES) ?>"
+                              onsubmit="return confirm('Slet dette menupunkt?')">
+                            <input type="hidden" name="action" value="delete_nav_item">
+                            <input type="hidden" name="nav_id" value="<?= (int)$item['id'] ?>">
+                            <button type="submit" class="btn-danger">Slet</button>
+                        </form>
+                    </td>
+                </tr>
+            <?php endforeach; endif; ?>
+            </tbody>
+        </table>
     </section>
 
     <!-- ── Kategorier ────────────────────────────────────────── -->

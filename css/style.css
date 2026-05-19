@@ -31,6 +31,34 @@ body {
     line-height: 1.55;
 }
 
+/* ── Site nav bar ────────────────────────────────────────────── */
+.site-nav {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+}
+.site-nav-inner {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .15rem;
+}
+.site-nav-link {
+    display: inline-block;
+    padding: .55rem .9rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: .85rem;
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    transition: color .15s, border-color .15s;
+}
+.site-nav-link:hover {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
 /* ── Site header ────────────────────────────────────────────── */
 .site-header {
     background: var(--surface);

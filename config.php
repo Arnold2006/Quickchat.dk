@@ -233,4 +233,25 @@ function qc_remove_user(int $room_id, string $username, string $token): bool
     return true;
 }
 
+// ---------------------------------------------------------------------------
+// Navigation menu
+// ---------------------------------------------------------------------------
+
+/**
+ * Returnerer alle nav-poster sorteret efter sort_order.
+ * Returnerer et tomt array hvis tabellen endnu ikke eksisterer.
+ *
+ * @return array<int, array{id: int, label: string, url: string, sort_order: int}>
+ */
+function qc_nav_items(): array
+{
+    try {
+        return db()
+            ->query("SELECT id, label, url, sort_order FROM nav_items ORDER BY sort_order, id")
+            ->fetchAll();
+    } catch (Exception) {
+        return [];
+    }
+}
+
 session_start();

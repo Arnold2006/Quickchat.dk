@@ -18,6 +18,8 @@ $stmt = db()->prepare("
 $stmt->execute([':cid' => $cat_id]);
 $rooms = $stmt->fetchAll();
 
+$nav_items = qc_nav_items();
+
 foreach ($rooms as &$room) {
     $room['online_users'] = apcu_ok() ? qc_user_count((int)$room['id']) : 0;
 }
@@ -43,6 +45,18 @@ unset($room);
             <p class="site-tagline"><?= htmlspecialchars($category['description']) ?></p>
         </div>
     </header>
+
+    <?php if (!empty($nav_items)): ?>
+    <nav class="site-nav">
+        <div class="site-nav-inner">
+            <?php foreach ($nav_items as $item): ?>
+            <a class="site-nav-link" href="<?= htmlspecialchars($item['url'], ENT_QUOTES) ?>">
+                <?= htmlspecialchars($item['label']) ?>
+            </a>
+            <?php endforeach; ?>
+        </div>
+    </nav>
+    <?php endif; ?>
 
     <main class="lobby">
         <p class="section-label">Vælg et chatrum</p>

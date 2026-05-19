@@ -3,6 +3,7 @@ require_once __DIR__ . '/config.php';
 
 $sent  = false;
 $error = '';
+$nav_items = qc_nav_items();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name    = trim($_POST['name']    ?? '');
@@ -36,6 +37,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <h1 class="site-logo">💬 <?= htmlspecialchars(SITE_NAME) ?></h1>
         </div>
     </header>
+
+    <?php if (!empty($nav_items)): ?>
+    <nav class="site-nav">
+        <div class="site-nav-inner">
+            <?php foreach ($nav_items as $item): ?>
+            <a class="site-nav-link" href="<?= htmlspecialchars($item['url'], ENT_QUOTES) ?>">
+                <?= htmlspecialchars($item['label']) ?>
+            </a>
+            <?php endforeach; ?>
+        </div>
+    </nav>
+    <?php endif; ?>
 
     <main class="lobby">
         <p class="section-label">Skriv til Admin</p>
