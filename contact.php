@@ -38,19 +38,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </header>
 
-    <?php if (!empty($nav_items)): ?>
-    <nav class="site-nav">
-        <div class="site-nav-inner">
-            <?php foreach ($nav_items as $item): ?>
-            <a class="site-nav-link" href="<?= htmlspecialchars($item['url'], ENT_QUOTES) ?>">
-                <?= htmlspecialchars($item['label']) ?>
-            </a>
-            <?php endforeach; ?>
-        </div>
-    </nav>
-    <?php endif; ?>
-
     <main class="lobby">
+        <?php if (!empty($nav_items)): ?>
+        <nav class="site-nav">
+            <div class="site-nav-inner">
+                <?php foreach ($nav_items as $item): ?>
+                <a class="site-nav-link" href="<?= htmlspecialchars($item['url'], ENT_QUOTES) ?>">
+                    <?= htmlspecialchars($item['label']) ?>
+                </a>
+                <?php endforeach; ?>
+            </div>
+        </nav>
+        <?php endif; ?>
         <p class="section-label">Skriv til Admin</p>
 
         <?php if ($sent): ?>

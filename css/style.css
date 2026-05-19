@@ -33,30 +33,30 @@ body {
 
 /* ── Site nav bar ────────────────────────────────────────────── */
 .site-nav {
-    background: var(--surface2);
-    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 1.25rem;
 }
 .site-nav-inner {
-    max-width: 960px;
-    margin: 0 auto;
-    padding: 0 2rem;
     display: flex;
     flex-wrap: wrap;
     gap: .15rem;
+    padding: .35rem .5rem;
 }
 .site-nav-link {
     display: inline-block;
-    padding: .55rem .9rem;
+    padding: .45rem .85rem;
     color: var(--text-muted);
     text-decoration: none;
     font-size: .85rem;
     font-weight: 500;
-    border-bottom: 2px solid transparent;
-    transition: color .15s, border-color .15s;
+    border-radius: var(--radius-sm);
+    transition: color .15s, background .15s;
 }
 .site-nav-link:hover {
     color: var(--accent);
-    border-bottom-color: var(--accent);
+    background: var(--surface2);
 }
 
 /* ── Site header ────────────────────────────────────────────── */

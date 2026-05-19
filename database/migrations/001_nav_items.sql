@@ -6,6 +6,6 @@ CREATE TABLE IF NOT EXISTS nav_items (
     sort_order INT           NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO nav_items (label, url, sort_order) VALUES
-    ('✉️ Skriv til Admin', 'contact.php', 1)
-ON DUPLICATE KEY UPDATE label = label;
+INSERT INTO nav_items (label, url, sort_order)
+SELECT '✉️ Skriv til Admin', 'contact.php', 1
+WHERE NOT EXISTS (SELECT 1 FROM nav_items LIMIT 1);

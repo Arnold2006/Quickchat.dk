@@ -200,9 +200,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $id  = (int)($_POST['nav_id']    ?? 0);
                 $dir = ($_POST['direction'] ?? '') === 'up' ? 'up' : 'down';
                 if ($id) {
-                    $row = db()->prepare("SELECT sort_order FROM nav_items WHERE id = :id");
-                    $row->execute([':id' => $id]);
-                    $cur = $row->fetchColumn();
+                    $stmt = db()->prepare("SELECT sort_order FROM nav_items WHERE id = :id");
+                    $stmt->execute([':id' => $id]);
+                    $cur = $stmt->fetchColumn();
                     if ($cur !== false) {
                         $cur = (int)$cur;
                         if ($dir === 'up') {

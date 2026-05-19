@@ -43,19 +43,18 @@ if (apcu_ok()) {
         </div>
     </header>
 
-    <?php if (!empty($nav_items)): ?>
-    <nav class="site-nav">
-        <div class="site-nav-inner">
-            <?php foreach ($nav_items as $item): ?>
-            <a class="site-nav-link" href="<?= htmlspecialchars($item['url'], ENT_QUOTES) ?>">
-                <?= htmlspecialchars($item['label']) ?>
-            </a>
-            <?php endforeach; ?>
-        </div>
-    </nav>
-    <?php endif; ?>
-
     <main class="lobby">
+        <?php if (!empty($nav_items)): ?>
+        <nav class="site-nav">
+            <div class="site-nav-inner">
+                <?php foreach ($nav_items as $item): ?>
+                <a class="site-nav-link" href="<?= htmlspecialchars($item['url'], ENT_QUOTES) ?>">
+                    <?= htmlspecialchars($item['label']) ?>
+                </a>
+                <?php endforeach; ?>
+            </div>
+        </nav>
+        <?php endif; ?>
         <?php if (FRONT_PAGE_TEXT !== ''): ?>
         <div class="front-page-text"><?= nl2br(htmlspecialchars(FRONT_PAGE_TEXT)) ?></div>
         <?php endif; ?>
