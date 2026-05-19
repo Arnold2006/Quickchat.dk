@@ -37,7 +37,6 @@ unset($room);
 <div class="page">
     <header class="site-header">
         <div class="header-inner">
-            <a href="index.php" class="back-link">← Alle kategorier</a>
             <h1 class="site-logo">
                 <?= htmlspecialchars($category['icon']) ?>
                 <?= htmlspecialchars($category['name']) ?>
