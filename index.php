@@ -47,9 +47,14 @@ if (apcu_ok()) {
         <?php if (!empty($nav_items)): ?>
         <nav class="site-nav">
             <div class="site-nav-inner">
-                <?php foreach ($nav_items as $item): ?>
+                <?php foreach ($nav_items as $item):
+                    $u = trim($item['url']);
+                    $is_home = ($u === '' || $u === '/' || preg_match('/^\.?\/?index\.php(\?.*)?$/i', $u));
+                ?>
                 <a class="site-nav-link" href="<?= htmlspecialchars($item['url'], ENT_QUOTES) ?>"
-                   <?= (int)$item['open_new_tab'] ? 'target="_blank" rel="noopener noreferrer"' : '' ?>>
+                   <?= (int)$item['open_new_tab'] ? 'target="_blank" rel="noopener noreferrer"' : '' ?>
+                   <?= $is_home ? 'data-home-link="1"' : '' ?>
+                >
                     <?= htmlspecialchars($item['label']) ?>
                 </a>
                 <?php endforeach; ?>
@@ -106,17 +111,27 @@ if (apcu_ok()) {
 
 <script>
 (function () {
-    var STORAGE_KEY = 'qc_share_modal_seen';
+    var SKIP_KEY = 'qc_skip_modal';
     var siteUrl = <?= json_encode((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'quickchat.dk') . '/') ?>;
     var siteText = <?= json_encode('Prøv ' . SITE_NAME . ' – anonym chat uden registrering!') ?>;
 
-    var seen = false;
-    try { seen = !!localStorage.getItem(STORAGE_KEY); } catch (e) {}
+    // Mark navigation from the Hjem (home) link so the modal is suppressed on that visit
+    document.querySelectorAll('a[data-home-link="1"]').forEach(function (a) {
+        a.addEventListener('click', function () {
+            try { sessionStorage.setItem(SKIP_KEY, '1'); } catch (e) {}
+        });
+    });
 
-    if (!seen) {
+    // Check whether this page load was triggered by the Hjem link
+    var skip = false;
+    try {
+        skip = !!sessionStorage.getItem(SKIP_KEY);
+        if (skip) sessionStorage.removeItem(SKIP_KEY);
+    } catch (e) {}
+
+    if (!skip) {
         var modal = document.getElementById('shareModal');
         modal.style.display = 'flex';
-        try { localStorage.setItem(STORAGE_KEY, '1'); } catch (e) {}
 
         document.getElementById('shareWhatsApp').href =
             'https://wa.me/?text=' + encodeURIComponent(siteText + ' ' + siteUrl);
