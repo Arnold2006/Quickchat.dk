@@ -51,7 +51,8 @@ unset($room);
         <nav class="site-nav">
             <div class="site-nav-inner">
                 <?php foreach ($nav_items as $item): ?>
-                <a class="site-nav-link" href="<?= htmlspecialchars($item['url'], ENT_QUOTES) ?>">
+                <a class="site-nav-link" href="<?= htmlspecialchars($item['url'], ENT_QUOTES) ?>"
+                   <?= (int)$item['open_new_tab'] ? 'target="_blank" rel="noopener noreferrer"' : '' ?>>
                     <?= htmlspecialchars($item['label']) ?>
                 </a>
                 <?php endforeach; ?>

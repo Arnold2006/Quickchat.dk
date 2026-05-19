@@ -175,13 +175,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 break;
 
             case 'create_nav_item':
-                $label = trim($_POST['nav_label'] ?? '');
-                $url   = trim($_POST['nav_url']   ?? '');
+                $label        = trim($_POST['nav_label']    ?? '');
+                $url          = trim($_POST['nav_url']      ?? '');
+                $open_new_tab = isset($_POST['nav_new_tab']) ? 1 : 0;
                 if ($label !== '' && $url !== '' && mb_strlen($label) <= 100 && mb_strlen($url) <= 500) {
                     $maxOrd = (int)db()->query("SELECT COALESCE(MAX(sort_order), 0) FROM nav_items")->fetchColumn();
                     db()->prepare(
-                        "INSERT INTO nav_items (label, url, sort_order) VALUES (:l, :u, :o)"
-                    )->execute([':l' => $label, ':u' => $url, ':o' => $maxOrd + 1]);
+                        "INSERT INTO nav_items (label, url, open_new_tab, sort_order) VALUES (:l, :u, :t, :o)"
+                    )->execute([':l' => $label, ':u' => $url, ':t' => $open_new_tab, ':o' => $maxOrd + 1]);
                     $msg = 'Menupunkt "' . htmlspecialchars($label) . '" oprettet.';
                 } else {
                     $msg = 'Ugyldigt menupunkt – tjek navn og URL.';
@@ -353,21 +354,26 @@ if (!$loginNeeded) {
             <input type="hidden" name="action" value="create_nav_item">
             <input type="text" name="nav_label" class="text-input" placeholder="Titel (fx ✉️ Skriv til Admin)" maxlength="100" required>
             <input type="text" name="nav_url"   class="text-input" placeholder="URL (fx contact.php)"          maxlength="500" required>
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.9rem;white-space:nowrap;">
+                <input type="checkbox" name="nav_new_tab" value="1">
+                Åbn i ny tab
+            </label>
             <button type="submit" class="btn-primary">Tilføj menupunkt</button>
         </form>
 
         <table class="admin-table">
             <thead>
-                <tr><th>ID</th><th>Titel</th><th>URL</th><th>Rækkefølge</th><th></th></tr>
+                <tr><th>ID</th><th>Titel</th><th>URL</th><th>Ny tab</th><th>Rækkefølge</th><th></th></tr>
             </thead>
             <tbody>
             <?php if (empty($nav_items)): ?>
-                <tr><td colspan="5" class="td-empty">Ingen menupunkter endnu.</td></tr>
+                <tr><td colspan="6" class="td-empty">Ingen menupunkter endnu.</td></tr>
             <?php else: foreach ($nav_items as $ni => $item): ?>
                 <tr>
                     <td><?= (int)$item['id'] ?></td>
                     <td><?= htmlspecialchars($item['label']) ?></td>
                     <td><a href="../<?= htmlspecialchars($item['url'], ENT_QUOTES) ?>" target="_blank" style="color:var(--accent);"><?= htmlspecialchars($item['url']) ?></a></td>
+                    <td><?= $item['open_new_tab'] ? '✔' : '—' ?></td>
                     <td class="sort-btns">
                         <?php if ($ni > 0): ?>
                         <form method="POST" action="?token=<?= htmlspecialchars($token, ENT_QUOTES) ?>" style="display:inline;">
