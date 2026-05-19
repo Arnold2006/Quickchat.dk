@@ -49,9 +49,14 @@ unset($room);
         <?php if (!empty($nav_items)): ?>
         <nav class="site-nav">
             <div class="site-nav-inner">
-                <?php foreach ($nav_items as $item): ?>
+                <?php foreach ($nav_items as $item):
+                    $u = trim($item['url']);
+                    $is_home = ($u === '' || $u === '/' || preg_match('/^\.?\/?index\.php(\?.*)?$/i', $u));
+                ?>
                 <a class="site-nav-link" href="<?= htmlspecialchars($item['url'], ENT_QUOTES) ?>"
-                   <?= (int)$item['open_new_tab'] ? 'target="_blank" rel="noopener noreferrer"' : '' ?>>
+                   <?= (int)$item['open_new_tab'] ? 'target="_blank" rel="noopener noreferrer"' : '' ?>
+                   <?= $is_home ? 'data-home-link="1"' : '' ?>
+                >
                     <?= htmlspecialchars($item['label']) ?>
                 </a>
                 <?php endforeach; ?>
@@ -230,6 +235,13 @@ function renderTooltip(bodyEl, users) {
         bodyEl.appendChild(span);
     });
 }
+
+// Sæt sessionStorage-flag så velkomst-modalen springes over ved Hjem-navigation
+document.querySelectorAll('a[data-home-link="1"]').forEach(function (a) {
+    a.addEventListener('click', function () {
+        try { sessionStorage.setItem('qc_skip_modal', '1'); } catch (e) {}
+    });
+});
 </script>
 </body>
 </html>
