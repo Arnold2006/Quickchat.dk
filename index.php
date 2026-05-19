@@ -110,10 +110,13 @@ if (apcu_ok()) {
     var siteUrl = <?= json_encode((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'quickchat.dk') . '/') ?>;
     var siteText = <?= json_encode('Prøv ' . SITE_NAME . ' – anonym chat uden registrering!') ?>;
 
-    if (!localStorage.getItem(STORAGE_KEY)) {
+    var seen = false;
+    try { seen = !!localStorage.getItem(STORAGE_KEY); } catch (e) {}
+
+    if (!seen) {
         var modal = document.getElementById('shareModal');
         modal.style.display = 'flex';
-        localStorage.setItem(STORAGE_KEY, '1');
+        try { localStorage.setItem(STORAGE_KEY, '1'); } catch (e) {}
 
         document.getElementById('shareWhatsApp').href =
             'https://wa.me/?text=' + encodeURIComponent(siteText + ' ' + siteUrl);
@@ -126,6 +129,11 @@ if (apcu_ok()) {
                 setTimeout(function () {
                     document.getElementById('shareCopyLabel').textContent = 'Kopiér link';
                 }, 2000);
+            }).catch(function () {
+                document.getElementById('shareCopyLabel').textContent = '⚠ Kopiering fejlede';
+                setTimeout(function () {
+                    document.getElementById('shareCopyLabel').textContent = 'Kopiér link';
+                }, 2500);
             });
         });
 
