@@ -316,6 +316,71 @@ body {
     border-radius: var(--radius-sm);
 }
 
+/* ── Share / welcome modal ──────────────────────────────────── */
+.share-modal {
+    text-align: center;
+    width: min(440px, 94vw);
+    padding: 2.2rem 2rem 1.8rem;
+}
+.share-modal-icon {
+    font-size: 2.8rem;
+    margin-bottom: .6rem;
+    line-height: 1;
+}
+.share-modal h2 {
+    font-size: 1.35rem;
+    margin-bottom: .6rem;
+    color: var(--text);
+}
+.share-modal p {
+    font-size: .9rem;
+    color: var(--text-muted);
+    margin-bottom: .55rem;
+    line-height: 1.6;
+}
+.share-modal p strong { color: var(--text); }
+.share-modal-sub {
+    margin-bottom: 1.4rem !important;
+}
+.share-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .65rem;
+    justify-content: center;
+    margin-bottom: 1.1rem;
+}
+.share-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .5rem 1.1rem;
+    border-radius: var(--radius-sm);
+    font-size: .88rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: opacity .15s, transform .1s;
+}
+.share-btn:hover { opacity: .87; transform: translateY(-1px); }
+.share-btn-icon  { font-size: 1rem; }
+.share-btn--whatsapp { background: #25d366; color: #fff; }
+.share-btn--facebook { background: #1877f2; color: #fff; }
+.share-btn--copy     { background: var(--surface2); color: var(--text); }
+.share-modal-close {
+    width: 100%;
+    padding: .48rem 1rem;
+    font-size: .85rem;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    border: none;
+    cursor: pointer;
+    background: var(--surface2);
+    color: var(--text-muted);
+    transition: background .15s;
+}
+.share-modal-close:hover { background: #e0d4c8; color: var(--text); }
+
 /* ── Full-screen error page (room full / name taken) ────────── */
 .error-page {
     display: flex;

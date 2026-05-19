@@ -81,5 +81,63 @@ if (apcu_ok()) {
         <p>100 % anonymt &nbsp;·&nbsp; ingen registrering &nbsp;·&nbsp; ingen logning</p>
     </footer>
 </div>
+
+<!-- Del-modal -->
+<div class="modal-overlay" id="shareModal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="shareModalTitle">
+    <div class="modal share-modal">
+        <div class="share-modal-icon">🚀</div>
+        <h2 id="shareModalTitle">Hjælp os med at vokse!</h2>
+        <p><?= htmlspecialchars(SITE_NAME) ?> er 100 % anonymt og gratis – men vi har brug for <strong>din</strong> hjælp til at sprede ordet, så der kommer flere at chatte med.</p>
+        <p class="share-modal-sub">Del siden med dine venner og giv dem en god chatoplevelse 💬</p>
+        <div class="share-buttons">
+            <a class="share-btn share-btn--whatsapp" id="shareWhatsApp" href="#" target="_blank" rel="noopener noreferrer">
+                <span class="share-btn-icon">📱</span> WhatsApp
+            </a>
+            <a class="share-btn share-btn--facebook" id="shareFacebook" href="#" target="_blank" rel="noopener noreferrer">
+                <span class="share-btn-icon">📘</span> Facebook
+            </a>
+            <button class="share-btn share-btn--copy" id="shareCopy" type="button">
+                <span class="share-btn-icon">🔗</span> <span id="shareCopyLabel">Kopiér link</span>
+            </button>
+        </div>
+        <button class="btn-secondary share-modal-close" id="shareModalClose" type="button">Luk</button>
+    </div>
+</div>
+
+<script>
+(function () {
+    var STORAGE_KEY = 'qc_share_modal_seen';
+    var siteUrl = <?= json_encode((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'quickchat.dk') . '/') ?>;
+    var siteText = <?= json_encode('Prøv ' . SITE_NAME . ' – anonym chat uden registrering!') ?>;
+
+    if (!localStorage.getItem(STORAGE_KEY)) {
+        var modal = document.getElementById('shareModal');
+        modal.style.display = 'flex';
+        localStorage.setItem(STORAGE_KEY, '1');
+
+        document.getElementById('shareWhatsApp').href =
+            'https://wa.me/?text=' + encodeURIComponent(siteText + ' ' + siteUrl);
+        document.getElementById('shareFacebook').href =
+            'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(siteUrl);
+
+        document.getElementById('shareCopy').addEventListener('click', function () {
+            navigator.clipboard.writeText(siteUrl).then(function () {
+                document.getElementById('shareCopyLabel').textContent = '✓ Kopieret!';
+                setTimeout(function () {
+                    document.getElementById('shareCopyLabel').textContent = 'Kopiér link';
+                }, 2000);
+            });
+        });
+
+        document.getElementById('shareModalClose').addEventListener('click', function () {
+            modal.style.display = 'none';
+        });
+
+        modal.addEventListener('click', function (e) {
+            if (e.target === modal) modal.style.display = 'none';
+        });
+    }
+}());
+</script>
 </body>
 </html>
