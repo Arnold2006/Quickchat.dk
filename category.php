@@ -52,7 +52,13 @@ unset($room);
                 <div class="room-info">
                     <h3><?= htmlspecialchars($room['name']) ?></h3>
                     <span class="user-count">
-                        <span id="uc-<?= (int)$room['id'] ?>"><?= (int)$room['online_users'] ?></span>/<?= MAX_USERS ?>
+                        <span class="user-count-tip" data-room-id="<?= (int)$room['id'] ?>">
+                            <span id="uc-<?= (int)$room['id'] ?>"><?= (int)$room['online_users'] ?></span>/<?= MAX_USERS ?>
+                            <div class="room-user-tooltip" id="ut-<?= (int)$room['id'] ?>">
+                                <div class="tooltip-title">I rummet</div>
+                                <div class="tooltip-body"><span class="tooltip-empty">Henter…</span></div>
+                            </div>
+                        </span>
                     </span>
                 </div>
                 <button
@@ -164,6 +170,53 @@ function refreshCounts() {
         .catch(() => {});
 }
 setInterval(refreshCounts, 5000);
+
+// Preview af brugere ved hover på brugertal
+const tooltipCache = {};   // room_id -> { users: [], ts: timestamp }
+const CACHE_MS = 4000;
+
+document.querySelectorAll('.user-count-tip').forEach(tip => {
+    tip.addEventListener('mouseenter', () => {
+        const roomId   = parseInt(tip.dataset.roomId, 10);
+        const bodyEl   = tip.querySelector('.tooltip-body');
+        const now      = Date.now();
+        const cached   = tooltipCache[roomId];
+
+        if (cached && now - cached.ts < CACHE_MS) {
+            renderTooltip(bodyEl, cached.users);
+            return;
+        }
+
+        bodyEl.innerHTML = '<span class="tooltip-empty">Henter…</span>';
+
+        fetch('api/users.php?room_id=' + roomId)
+            .then(r => r.json())
+            .then(users => {
+                tooltipCache[roomId] = { users, ts: Date.now() };
+                renderTooltip(bodyEl, users);
+            })
+            .catch(() => {
+                bodyEl.innerHTML = '<span class="tooltip-empty">Kunne ikke hentes</span>';
+            });
+    });
+});
+
+function renderTooltip(bodyEl, users) {
+    bodyEl.innerHTML = '';
+    if (!users || users.length === 0) {
+        const empty = document.createElement('span');
+        empty.className   = 'tooltip-empty';
+        empty.textContent = 'Ingen brugere';
+        bodyEl.appendChild(empty);
+        return;
+    }
+    users.forEach(u => {
+        const span = document.createElement('span');
+        span.className   = 'tooltip-username';
+        span.textContent = u;
+        bodyEl.appendChild(span);
+    });
+}
 </script>
 </body>
 </html>
