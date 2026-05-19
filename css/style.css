@@ -31,6 +31,34 @@ body {
     line-height: 1.55;
 }
 
+/* ── Site nav bar ────────────────────────────────────────────── */
+.site-nav {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 1.25rem;
+}
+.site-nav-inner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .15rem;
+    padding: .35rem .5rem;
+}
+.site-nav-link {
+    display: inline-block;
+    padding: .45rem .85rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: .85rem;
+    font-weight: 500;
+    border-radius: var(--radius-sm);
+    transition: color .15s, background .15s;
+}
+.site-nav-link:hover {
+    color: var(--accent);
+    background: var(--surface2);
+}
+
 /* ── Site header ────────────────────────────────────────────── */
 .site-header {
     background: var(--surface);

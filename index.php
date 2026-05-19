@@ -12,6 +12,8 @@ $stmt = db()->query("
 ");
 $categories = $stmt->fetchAll();
 
+$nav_items = qc_nav_items();
+
 // Tæl online-brugere pr. kategori via APCu
 if (apcu_ok()) {
     $all_rooms = db()->query("SELECT id, category_id FROM rooms")->fetchAll();
@@ -42,6 +44,17 @@ if (apcu_ok()) {
     </header>
 
     <main class="lobby">
+        <?php if (!empty($nav_items)): ?>
+        <nav class="site-nav">
+            <div class="site-nav-inner">
+                <?php foreach ($nav_items as $item): ?>
+                <a class="site-nav-link" href="<?= htmlspecialchars($item['url'], ENT_QUOTES) ?>">
+                    <?= htmlspecialchars($item['label']) ?>
+                </a>
+                <?php endforeach; ?>
+            </div>
+        </nav>
+        <?php endif; ?>
         <?php if (FRONT_PAGE_TEXT !== ''): ?>
         <div class="front-page-text"><?= nl2br(htmlspecialchars(FRONT_PAGE_TEXT)) ?></div>
         <?php endif; ?>
@@ -65,7 +78,6 @@ if (apcu_ok()) {
 
     <footer class="site-footer">
         <p>100 % anonymt &nbsp;·&nbsp; ingen registrering &nbsp;·&nbsp; ingen logning</p>
-        <p><a class="footer-link" href="contact.php">✉️ Skriv til Admin</a></p>
     </footer>
 </div>
 </body>
