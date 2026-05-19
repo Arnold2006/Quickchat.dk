@@ -133,6 +133,62 @@ body {
 .room-info h3           { font-size: 1rem; margin-bottom: .25rem; }
 .user-count             { font-size: .78rem; color: var(--text-muted); }
 
+/* ── Room user-count tooltip ────────────────────────────────── */
+.user-count-tip {
+    position: relative;
+    cursor: default;
+    text-decoration: underline dotted var(--text-muted);
+    text-underline-offset: 2px;
+}
+.room-user-tooltip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: .5rem .75rem;
+    min-width: 130px;
+    max-width: 210px;
+    box-shadow: 0 4px 18px rgba(0,0,0,.13);
+    z-index: 200;
+    font-size: .78rem;
+    color: var(--text);
+    pointer-events: none;
+}
+.room-user-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--border);
+}
+.user-count-tip:hover .room-user-tooltip { display: block; }
+.tooltip-title {
+    font-weight: 600;
+    color: var(--text-muted);
+    font-size: .7rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin-bottom: .35rem;
+}
+.tooltip-username {
+    display: block;
+    padding: .1rem 0;
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.tooltip-username:last-child { border-bottom: none; }
+.tooltip-empty {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
 /* ── Buttons ────────────────────────────────────────────────── */
 .btn-enter,
 .btn-primary,
