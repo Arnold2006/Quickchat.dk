@@ -13,6 +13,8 @@ $stmt = db()->query("
 $categories = $stmt->fetchAll();
 
 $nav_items = qc_nav_items();
+$page_title = 'Vælg kategori';
+$page_subtitle = 'Anonym chat – ingen registrering nødvendig';
 
 // Tæl online-brugere pr. kategori via APCu
 if (apcu_ok()) {
@@ -25,42 +27,8 @@ if (apcu_ok()) {
 } else {
     $cat_online = [];
 }
+require __DIR__ . '/includes/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="da">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars(SITE_NAME) ?> – Vælg kategori</title>
-    <link rel="stylesheet" href="css/style.css">
-</head>
-<body>
-<div class="page">
-    <header class="site-header">
-        <div class="header-inner">
-            <h1 class="site-logo">💬 <?= htmlspecialchars(SITE_NAME) ?></h1>
-            <p class="site-tagline">Anonym chat – ingen registrering nødvendig</p>
-        </div>
-    </header>
-
-    <main class="lobby">
-        <?php if (!empty($nav_items)): ?>
-        <nav class="site-nav">
-            <div class="site-nav-inner">
-                <?php foreach ($nav_items as $item):
-                    $u = trim($item['url']);
-                    $is_home = ($u === '' || $u === '/' || preg_match('/^\.?\/?index\.php(\?.*)?$/i', $u));
-                ?>
-                <a class="site-nav-link" href="<?= htmlspecialchars($item['url'], ENT_QUOTES) ?>"
-                   <?= (int)$item['open_new_tab'] ? 'target="_blank" rel="noopener noreferrer"' : '' ?>
-                   <?= $is_home ? 'data-home-link="1"' : '' ?>
-                >
-                    <?= htmlspecialchars($item['label']) ?>
-                </a>
-                <?php endforeach; ?>
-            </div>
-        </nav>
-        <?php endif; ?>
         <?php if (FRONT_PAGE_TEXT !== ''): ?>
         <div class="front-page-text"><?= nl2br(htmlspecialchars(FRONT_PAGE_TEXT)) ?></div>
         <?php endif; ?>
@@ -80,12 +48,6 @@ if (apcu_ok()) {
             </a>
             <?php endforeach; ?>
         </div>
-    </main>
-
-    <footer class="site-footer">
-        <p>100 % anonymt &nbsp;·&nbsp; ingen registrering &nbsp;·&nbsp; ingen logning</p>
-    </footer>
-</div>
 
 <!-- Del-modal -->
 <div class="modal-overlay" id="shareModal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="shareModalTitle">
@@ -114,13 +76,6 @@ if (apcu_ok()) {
     var SKIP_KEY = 'qc_skip_modal';
     var siteUrl = <?= json_encode((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'quickchat.dk') . '/') ?>;
     var siteText = <?= json_encode('Prøv ' . SITE_NAME . ' – anonym chat uden registrering!') ?>;
-
-    // Mark navigation from the Hjem (home) link so the modal is suppressed on that visit
-    document.querySelectorAll('a[data-home-link="1"]').forEach(function (a) {
-        a.addEventListener('click', function () {
-            try { sessionStorage.setItem(SKIP_KEY, '1'); } catch (e) {}
-        });
-    });
 
     // Check whether this page load was triggered by the Hjem link
     var skip = false;
@@ -162,5 +117,4 @@ if (apcu_ok()) {
     }
 }());
 </script>
-</body>
-</html>
+<?php require __DIR__ . '/includes/footer.php'; ?>

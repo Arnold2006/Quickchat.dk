@@ -4,6 +4,7 @@ require_once __DIR__ . '/config.php';
 $sent  = false;
 $error = '';
 $nav_items = qc_nav_items();
+$page_title = 'Skriv til Admin';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name    = trim($_POST['name']    ?? '');
@@ -20,42 +21,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $sent = true;
     }
 }
+require __DIR__ . '/includes/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="da">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars(SITE_NAME) ?> – Skriv til Admin</title>
-    <link rel="stylesheet" href="css/style.css">
-</head>
-<body>
-<div class="page">
-    <header class="site-header">
-        <div class="header-inner">
-            <a class="back-link" href="index.php" data-home-link="1">← Tilbage til forsiden</a>
-            <h1 class="site-logo">💬 <?= htmlspecialchars(SITE_NAME) ?></h1>
-        </div>
-    </header>
-
-    <main class="lobby">
-        <?php if (!empty($nav_items)): ?>
-        <nav class="site-nav">
-            <div class="site-nav-inner">
-                <?php foreach ($nav_items as $item):
-                    $u = trim($item['url']);
-                    $is_home = ($u === '' || $u === '/' || preg_match('/^\.?\/?index\.php(\?.*)?$/i', $u));
-                ?>
-                <a class="site-nav-link" href="<?= htmlspecialchars($item['url'], ENT_QUOTES) ?>"
-                   <?= (int)$item['open_new_tab'] ? 'target="_blank" rel="noopener noreferrer"' : '' ?>
-                   <?= $is_home ? 'data-home-link="1"' : '' ?>
-                >
-                    <?= htmlspecialchars($item['label']) ?>
-                </a>
-                <?php endforeach; ?>
-            </div>
-        </nav>
-        <?php endif; ?>
         <p class="section-label">Skriv til Admin</p>
 
         <?php if ($sent): ?>
@@ -97,20 +64,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </form>
             </div>
         <?php endif; ?>
-    </main>
-
-    <footer class="site-footer">
-        <p>100 % anonymt &nbsp;·&nbsp; ingen registrering &nbsp;·&nbsp; ingen logning</p>
-    </footer>
-</div>
-
-<script>
-// Sæt sessionStorage-flag så velkomst-modalen springes over ved Hjem-navigation
-document.querySelectorAll('a[data-home-link="1"]').forEach(function (a) {
-    a.addEventListener('click', function () {
-        try { sessionStorage.setItem('qc_skip_modal', '1'); } catch (e) {}
-    });
-});
-</script>
-</body>
-</html>
+<?php require __DIR__ . '/includes/footer.php'; ?>
